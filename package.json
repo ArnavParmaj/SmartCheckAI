@@ -1,0 +1,12 @@
+{
+  "name": "smartcheck-ai-frontend",
+  "version": "1.0.0",
+  "description": "SmartCheck AI Frontend Cleanup",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
