@@ -1,0 +1,141 @@
+import { useApp } from '../context/AppContext';
+import { mockStudentSubmissions, getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
+
+export default function ExamDetailView() {
+  const { activeExam, navigate } = useApp();
+
+  if (!activeExam) {
+    navigate('exams');
+    return null;
+  }
+
+  const submissions = mockStudentSubmissions.filter(s => s.examId === activeExam.id);
+
+  return (
+    <div className="flex flex-col gap-6 animate-fadeIn">
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate('exams')} className="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant">
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-headline-md font-bold text-on-surface">{activeExam.title}</h1>
+            <span className={getStatusColor(activeExam.status)}>{activeExam.status}</span>
+          </div>
+          <p className="text-body-sm text-on-surface-variant">{activeExam.subject} · {activeExam.grade} · {activeExam.dateCreated}</p>
+        </div>
+        <button onClick={() => navigate('export')} className="btn-outline hidden sm:flex items-center gap-1">
+          <span className="material-symbols-outlined text-[18px]">file_download</span>
+          Export
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Students', value: activeExam.totalStudents, icon: 'group' },
+          { label: 'Evaluated', value: activeExam.submissionsEvaluated, icon: 'fact_check' },
+          { label: 'Avg Score', value: activeExam.avgScore ? `${activeExam.avgScore}/${activeExam.maxScore}` : '—', icon: 'grade' },
+          { label: 'Pending Review', value: activeExam.pendingReview, icon: 'pending_actions' },
+        ].map(s => (
+          <div key={s.label} className="card p-4 text-center">
+            <span className="material-symbols-outlined text-[24px] text-primary mb-1">{s.icon}</span>
+            <p className="text-headline-md font-bold text-on-surface">{s.value}</p>
+            <p className="text-[11px] text-on-surface-variant">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={() => navigate('upload-sheets', { exam: activeExam })} className="btn-primary text-sm">
+          <span className="material-symbols-outlined text-[18px]">upload_file</span>
+          Upload Answer Sheets
+        </button>
+        <button onClick={() => navigate('ocr-review', { exam: activeExam, submission: submissions[1] })} className="btn-outline text-sm flex items-center gap-1">
+          <span className="material-symbols-outlined text-[18px]">document_scanner</span>
+          OCR Review
+        </button>
+      </div>
+
+      {/* Submissions Table */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-outline-variant">
+          <h2 className="text-headline-md font-semibold text-on-surface">Student Submissions</h2>
+        </div>
+        {submissions.length === 0 ? (
+          <div className="p-12 text-center text-on-surface-variant">
+            <span className="material-symbols-outlined text-[48px] text-outline mb-3 block">inbox</span>
+            <p className="text-body-md font-medium text-on-surface mb-1">No submissions yet</p>
+            <p className="text-body-sm">Upload student answer sheets to start AI evaluation.</p>
+            <button onClick={() => navigate('upload-sheets', { exam: activeExam })} className="btn-primary mt-4 mx-auto">
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              Upload Sheets
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left min-w-[600px]">
+              <thead>
+                <tr className="bg-surface-bright border-b border-outline-variant">
+                  <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider">Student</th>
+                  <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider">Score</th>
+                  <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider">AI Confidence</th>
+                  <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider">Status</th>
+                  <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant">
+                {submissions.map(sub => (
+                  <tr key={sub.id} className="table-row">
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+                          <span className="text-primary text-xs font-bold">{sub.studentName.split(' ').map(n => n[0]).join('')}</span>
+                        </div>
+                        <div>
+                          <p className="text-label-md font-semibold text-on-surface">{sub.studentName}</p>
+                          <p className="text-[11px] text-on-surface-variant">{sub.rollNumber}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-2">
+                        <div className={`score-circle w-10 h-10 text-sm border-2 ${sub.percentage >= 75 ? 'border-secondary text-secondary' : sub.percentage >= 50 ? 'border-tertiary-container text-tertiary-container' : 'border-error text-error'}`}>
+                          {sub.percentage}%
+                        </div>
+                        <span className="text-body-sm text-on-surface-variant">{sub.totalScore}/{sub.maxScore}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-5">
+                      <span className={getConfidenceClass(sub.aiConfidence)}>{sub.aiConfidence}%</span>
+                    </td>
+                    <td className="py-4 px-5">
+                      <span className={getStatusColor(sub.status)}>{sub.status}</span>
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center gap-2 justify-end">
+                        <button
+                          onClick={() => navigate('ocr-review', { exam: activeExam, submission: sub })}
+                          className="btn-ghost text-xs py-1 px-2"
+                        >
+                          OCR
+                        </button>
+                        <button
+                          onClick={() => navigate('review-approve', { exam: activeExam, submission: sub })}
+                          className="btn-outline text-xs"
+                        >
+                          {sub.teacherApproved ? 'View' : 'Review'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
