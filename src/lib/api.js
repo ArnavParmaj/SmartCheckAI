@@ -191,3 +191,20 @@ export async function saveEvaluationDB(studentAnswerId, marksAwarded, confidence
     return { data: null, error: err };
   }
 }
+
+// Update teacher profile in Supabase DB
+export async function updateTeacherProfile(teacherId, profileData) {
+  try {
+    const { data, error } = await supabase
+      .from('teachers')
+      .update(profileData)
+      .eq('id', teacherId)
+      .select()
+      .single();
+
+    return { data, error };
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    return { data: null, error: err };
+  }
+}

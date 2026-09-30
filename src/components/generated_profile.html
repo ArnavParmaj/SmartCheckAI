@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile - SmartCheckAI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e2e1ed",
+                        "on-surface": "#191b23",
+                        "secondary-fixed-dim": "#51df9c",
+                        "inverse-surface": "#2e3038",
+                        "surface": "#faf8ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#434654",
+                        "primary": "#1550d3",
+                        "secondary-fixed": "#71fcb6",
+                        "surface-dim": "#d9d9e4",
+                        "on-error": "#ffffff",
+                        "background": "#faf8ff",
+                        "outline-variant": "#c3c5d7",
+                        "surface-bright": "#faf8ff",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#9e6a00",
+                        "on-tertiary-fixed": "#291800",
+                        "on-secondary-fixed-variant": "#005233",
+                        "inverse-primary": "#b5c4ff",
+                        "on-primary-container": "#fffbff",
+                        "inverse-on-surface": "#f0f0fb",
+                        "on-primary-fixed-variant": "#003cad",
+                        "tertiary-fixed": "#ffddb1",
+                        "on-tertiary-fixed-variant": "#624000",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e2e1ed",
+                        "on-primary-fixed": "#00164d",
+                        "surface-container-high": "#e7e7f2",
+                        "on-background": "#191b23",
+                        "on-secondary-fixed": "#002112",
+                        "surface-container": "#ededf8",
+                        "primary-fixed-dim": "#b5c4ff",
+                        "secondary-container": "#71fcb6",
+                        "outline": "#737686",
+                        "surface-tint": "#1a53d6",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#007349",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f3fe",
+                        "tertiary": "#7e5300",
+                        "primary-container": "#3c6bed",
+                        "primary-fixed": "#dce1ff",
+                        "on-tertiary-container": "#fffbff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffba4b",
+                        "secondary": "#006c45"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "base": "8px",
+                        "stack-sm": "8px",
+                        "stack-lg": "32px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-xl": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        
+        .input-glow:focus-within {
+            border-color: #1550d3;
+            box-shadow: 0 0 0 4px rgba(21, 80, 211, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex">
+<!-- SideNavBar (from JSON, Settings is active) -->
+<nav class="hidden md:flex flex-col h-screen sticky left-0 top-0 py-stack-lg px-4 border-r border-outline-variant bg-surface w-64 flex-shrink-0 z-40">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">SmartCheckAI</h1>
+<p class="text-label-sm font-label-sm text-on-surface-variant">AI Evaluation Platform</p>
+</div>
+</div>
+<button class="w-full mb-8 bg-primary text-on-primary font-label-md text-label-md py-3 rounded-xl hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-[0px_4px_20px_rgba(0,0,0,0.05)] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+            Create New Exam
+        </button>
+<ul class="flex-1 flex flex-col gap-2">
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="text-label-md font-label-md">Exams</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-label-md font-label-md">Results</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 bg-primary-container text-on-primary-container rounded-xl px-4 py-3 font-semibold active:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="text-label-md font-label-md">Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto border-t border-outline-variant pt-4">
+<a class="flex items-center gap-4 text-on-surface-variant px-4 py-3 hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-label-md font-label-md">Log Out</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-h-screen">
+<!-- TopAppBar (Mobile only for nav, but using for header context) -->
+<header class="md:hidden flex justify-between items-center w-full px-margin-mobile h-16 sticky top-0 z-50 bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+<h1 class="text-headline-md font-headline-md font-bold text-primary">SmartCheckAI</h1>
+<button class="text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<div class="flex-1 p-margin-mobile md:p-margin-desktop flex justify-center items-start">
+<div class="w-full max-w-3xl">
+<!-- Header -->
+<div class="mb-stack-lg">
+<h2 class="text-headline-lg font-headline-lg text-on-surface mb-2">Profile Settings</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">Manage your account details and security preferences.</p>
+</div>
+<!-- Main Card -->
+<div class="bg-surface-container-lowest rounded-[16px] shadow-[0px_4px_20px_rgba(0,0,0,0.05)] p-6 md:p-8">
+<!-- Top Section: Avatar -->
+<div class="flex flex-col items-center mb-stack-lg fade-in-up">
+<div class="relative mb-4 group cursor-pointer">
+<div class="w-32 h-32 rounded-full overflow-hidden border-4 border-surface-container-lowest shadow-[0px_8px_30px_rgba(0,0,0,0.08)] bg-surface-container-high">
+<img alt="Teacher profile photo" class="w-full h-full object-cover" data-alt="A professional, friendly headshot of a middle-aged female teacher with glasses, soft natural lighting, light clean background, educational setting vibe, high resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjA38dQsF6pCFkGnyjQMUwAmCR4ht2qacAyHYbOFXqXJeH-okJW_mNy0r1JJWMh93WcJ41QZVNIumHptGniSD3hgFyTZj27SYjv94qnwra-M6Gi0QZzCTleWlWV6ICiviCzKiwPE77_l5yg3-lKc4Of3ym3FVA_BXI4V2toClqzHJkK0z-jmn2pVURjTNyFb-WHijFjqYzrWUrvX7JRxuTAhWH04BSSLbh8AS6xn8sFB-1rT-W6CPbsZ0oEGIyrGScqhFk-EEFWGxc"/>
+</div>
+<div class="absolute bottom-1 right-1 w-10 h-10 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-lg border-2 border-surface-container-lowest transform transition-transform duration-300 group-hover:scale-110">
+<span class="material-symbols-outlined text-[20px]">photo_camera</span>
+</div>
+</div>
+<h3 class="text-headline-md font-headline-md text-on-surface">Prof. Sarah J. Thompson</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">sarah.thompson@institution.edu</p>
+</div>
+<!-- Profile Details Section -->
+<section class="mb-stack-lg fade-in-up delay-100">
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface mb-6 border-b border-outline-variant pb-2">Profile Details</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Full Name</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" type="text" value="Prof. Sarah J. Thompson"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Email</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" type="email" value="sarah.thompson@institution.edu"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Phone (Optional)</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" placeholder="+1 (555) 000-0000" type="tel"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Institution Name</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" type="text" value="Green Valley University"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all md:col-span-2">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Subject(s) Taught</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" type="text" value="Physics, Mathematics"/>
+</div>
+</div>
+</section>
+<!-- Change Password Section -->
+<section class="mb-stack-lg fade-in-up delay-200">
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface mb-6 border-b border-outline-variant pb-2">Change Password</h4>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all md:col-span-2">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Current Password</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" placeholder="••••••••" type="password"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">New Password</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" placeholder="••••••••" type="password"/>
+</div>
+<div class="input-glow rounded-xl border-[1.5px] border-[#E4E7EC] bg-surface-container-lowest transition-all">
+<label class="block px-4 pt-2 text-label-sm font-label-sm text-on-surface-variant">Confirm Password</label>
+<input class="w-full px-4 pb-2 pt-1 bg-transparent border-none text-body-md font-body-md text-on-surface focus:ring-0" placeholder="••••••••" type="password"/>
+</div>
+</div>
+</section>
+<!-- Footer Actions -->
+<div class="pt-6 border-t border-outline-variant flex justify-end gap-4 fade-in-up delay-200">
+<button class="h-12 px-6 rounded-xl border-[1.5px] border-primary text-primary font-label-md text-label-md hover:bg-surface-container-low transition-colors min-w-[120px]">
+                            Cancel
+                        </button>
+<button class="h-12 px-8 rounded-xl bg-primary text-on-primary font-label-md text-label-md shadow-[0px_4px_20px_rgba(0,0,0,0.05)] hover:bg-primary-container hover:text-on-primary-container transition-all min-w-[160px] flex items-center justify-center gap-2 overflow-hidden relative" id="saveBtn">
+<span id="saveText">Save Changes</span>
+<span class="material-symbols-outlined absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-0 opacity-0 transition-all duration-300" id="saveCheck">check_circle</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        const saveBtn = document.getElementById('saveBtn');
+        const saveText = document.getElementById('saveText');
+        const saveCheck = document.getElementById('saveCheck');
+
+        saveBtn.addEventListener('click', () => {
+            // Animate to success state
+            saveText.style.opacity = '0';
+            saveText.style.transform = 'translateY(-20px)';
+            
+            saveCheck.classList.remove('scale-0', 'opacity-0');
+            saveCheck.classList.add('scale-100', 'opacity-100');
+            
+            saveBtn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+            saveBtn.classList.remove('bg-primary', 'text-on-primary');
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                saveText.style.opacity = '1';
+                saveText.style.transform = 'translateY(0)';
+                
+                saveCheck.classList.add('scale-0', 'opacity-0');
+                saveCheck.classList.remove('scale-100', 'opacity-100');
+                
+                saveBtn.classList.remove('bg-secondary-container', 'text-on-secondary-container');
+                saveBtn.classList.add('bg-primary', 'text-on-primary');
+            }, 2000);
+        });
+    </script>
+</body></html>

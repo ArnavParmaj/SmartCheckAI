@@ -99,11 +99,17 @@ export default function TopBar() {
                 <p className="text-[11px] text-on-surface-variant">{user?.school}</p>
               </div>
               <div className="py-1">
-                <button className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-surface-container-low text-body-sm text-on-surface transition-colors">
+                <button 
+                  onClick={() => { navigate('settings'); setShowProfile(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-surface-container-low text-body-sm text-on-surface transition-colors"
+                >
                   <span className="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
                   My Profile
                 </button>
-                <button className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-surface-container-low text-body-sm text-on-surface transition-colors">
+                <button 
+                  onClick={() => { navigate('settings'); setShowProfile(false); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-surface-container-low text-body-sm text-on-surface transition-colors"
+                >
                   <span className="material-symbols-outlined text-[18px] text-on-surface-variant">settings</span>
                   Settings
                 </button>

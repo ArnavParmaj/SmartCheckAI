@@ -107,8 +107,8 @@ export default {
         'shimmer': { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
       },
       animation: {
-        'fadeIn': 'fadeIn 0.3s ease-out',
-        'slideIn': 'slideIn 0.25s ease-out',
+        'fadeIn': 'fadeIn 0.5s ease-out both',
+        'slideIn': 'slideIn 0.25s ease-out both',
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
         'spin-slow': 'spin-slow 2s linear infinite',
         'shimmer': 'shimmer 2s linear infinite',

@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-dotenv
+supabase
+paddleocr
+paddlepaddle
+sentence-transformers
+keybert
+spacy
+opencv-python
+Pillow
+pymupdf
+python-multipart
+numpy

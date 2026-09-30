@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchTeacherExams, createExamInDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB } from '../lib/api';
+import { fetchTeacherExams, createExamInDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB, updateTeacherProfile } from '../lib/api';
 import { mockExams, mockStudentSubmissions, mockAuditEvents, mockUser } from '../data/mockData';
 
 const AppContext = createContext(null);
@@ -317,12 +317,37 @@ export function AppProvider({ children }) {
     return submissions.filter(s => s.examId === examId);
   }, [submissions]);
 
+  // Update user profile
+  const updateUserProfile = useCallback(async (profileData) => {
+    if (isDemo) {
+      setUser(prev => ({ ...prev, ...profileData }));
+      showNotification('Profile updated (Demo Mode)', 'success');
+      return { success: true };
+    }
+    
+    // Convert to DB keys
+    const dbData = {};
+    if (profileData.name) dbData.name = profileData.name;
+    if (profileData.email) dbData.email = profileData.email;
+    if (profileData.school) dbData.institution = profileData.school;
+    
+    const { data, error } = await updateTeacherProfile(user.id, dbData);
+    if (error) {
+      showNotification('Failed to update profile', 'error');
+      return { error };
+    }
+    
+    setUser(prev => ({ ...prev, ...profileData }));
+    showNotification('Profile updated successfully!', 'success');
+    return { success: true };
+  }, [user, isDemo, showNotification]);
+
   const value = {
     isAuthenticated, user, isDemo, loading, login, demoLogin, signup, logout,
     currentView, navigate, activeExam, setActiveExam, activeSubmission, setActiveSubmission,
     exams, submissions, auditEvents,
     overrideScore, approveSubmission, updateOcrText, createExam, uploadAnswerSheetDB,
-    getSubmissionsForExam,
+    getSubmissionsForExam, updateUserProfile,
     isDark, toggleDark,
     notification, showNotification,
     sidebarOpen, setSidebarOpen,

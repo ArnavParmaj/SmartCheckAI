@@ -103,7 +103,10 @@ export default function Sidebar() {
           ))}
 
           {/* User profile */}
-          <div className="flex items-center gap-2 px-2 py-2 mt-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer">
+          <div 
+            className="flex items-center gap-2 px-2 py-2 mt-2 rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer"
+            onClick={() => { navigate('settings'); setSidebarOpen(false); }}
+          >
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-on-primary text-xs font-bold">
                 {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}

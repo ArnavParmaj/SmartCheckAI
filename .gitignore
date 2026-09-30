@@ -25,3 +25,19 @@ dist-ssr
 
 # Supabase Local
 .agents/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Graphify cache
+graphify-out/cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

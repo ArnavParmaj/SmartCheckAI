@@ -12,6 +12,7 @@ import ReviewApproveView from './components/ReviewApproveView';
 import AuditTrailView from './components/AuditTrailView';
 import ExportView from './components/ExportView';
 import ResultsView from './components/ResultsView';
+import ProfileView from './components/ProfileView';
 
 function AppShell() {
   const { currentView } = useApp();
@@ -36,26 +37,11 @@ function AppShell() {
           {currentView === 'results' && <ResultsView />}
           {currentView === 'audit' && <AuditTrailView />}
           {currentView === 'export' && <ExportView />}
-          {currentView === 'settings' && <SettingsPlaceholder />}
+          {currentView === 'settings' && <ProfileView />}
         </main>
       </div>
 
       <Toast />
-    </div>
-  );
-}
-
-function SettingsPlaceholder() {
-  return (
-    <div className="flex flex-col gap-6 animate-fadeIn max-w-2xl">
-      <div>
-        <h1 className="text-headline-md font-bold text-on-surface">Settings</h1>
-        <p className="text-body-sm text-on-surface-variant">Manage your account and preferences.</p>
-      </div>
-      <div className="card p-8 text-center text-on-surface-variant">
-        <span className="material-symbols-outlined text-[48px] text-outline mb-3 block">settings</span>
-        <p className="text-body-md">Settings coming soon.</p>
-      </div>
     </div>
   );
 }
