@@ -1,16 +1,16 @@
 # Graph Report - SmartCheck AI  (2026-10-08)
 
 ## Corpus Check
-- 54 files · ~33,944 words
+- 54 files · ~32,910 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 277 nodes · 439 edges · 25 communities (8 shown, 15 thin omitted)
+- 271 nodes · 433 edges · 25 communities (8 shown, 15 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8dff5ab9`
+- Built from commit: `768b53ba`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -44,12 +44,12 @@
 2. `react` - 15 edges
 3. `Application Views (`src/components/`)` - 12 edges
 4. `extract_questions_endpoint()` - 11 edges
-5. `SmartCheckAI — Project Progress Report` - 11 edges
-6. `extract_rubric_endpoint()` - 10 edges
-7. `process_ocr()` - 10 edges
-8. `AppProvider()` - 10 edges
-9. `run_ocr()` - 9 edges
-10. `segment_answers()` - 9 edges
+5. `extract_rubric_endpoint()` - 10 edges
+6. `process_ocr()` - 10 edges
+7. `AppProvider()` - 10 edges
+8. `run_ocr()` - 9 edges
+9. `segment_answers()` - 9 edges
+10. `getConfidenceClass()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `extract_questions_endpoint()` --calls--> `is_gemini_available()`  [EXTRACTED]
@@ -81,8 +81,8 @@ Cohesion: 0.10
 Nodes (16): health(), SmartCheck AI Backend Application FastAPI server serving AI agent capabilities…, Health check endpoint to verify backend status., extract_concepts(), post, Concept Extraction Routes Handles endpoints for extracting key concepts, domain…, Placeholder endpoint for concept extraction. Will handle receiving answer key…, evaluate_answers() (+8 more)
 
 ### Community 3 - "SmartCheckAI — Project Progress Report"
-Cohesion: 0.06
-Nodes (31): 10.1 Repository Metadata, 10.2 Commit History, 10.3 Working Tree Status, 10. Git Activity Summary, 1. Project Overview, 2.1 OCR Agent (`agents/ocr_agent/`, `backend/routes/ocr_routes.py`), 2.2 Knowledge & Concept Agent (`agents/concept_agent/`, `backend/routes/concept_routes.py`), 2.3 Evaluation & Scoring Agent (`agents/evaluation_agent/`, `agents/feedback_agent/`, `backend/routes/`) (+23 more)
+Cohesion: 0.08
+Nodes (25): 1. Project Overview, 2.1 OCR Agent (`agents/ocr_agent/`, `backend/routes/ocr_routes.py`), 2.2 Knowledge & Concept Agent (`agents/concept_agent/`, `backend/routes/concept_routes.py`), 2.3 Evaluation & Scoring Agent (`agents/evaluation_agent/`, `agents/feedback_agent/`, `backend/routes/`), 2.4 Frontend & Integration (`src/`, `backend/main.py`), 2. Module Status, 3.1 Detected Dependencies & Frameworks, 3.2 Stack Architecture (+17 more)
 
 ### Community 4 - "AppContext.jsx"
 Cohesion: 0.26
@@ -101,19 +101,19 @@ Cohesion: 0.21
 Nodes (9): CreateExamWizard(), GRADES, STEPS, SUBJECTS, TopBar(), checkBackendHealth(), extractQuestionsFromFile(), extractRubricFromFile() (+1 more)
 
 ## Knowledge Gaps
-- **79 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+74 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 155 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **74 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+69 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 150 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `react` connect `App.jsx` to `package.json`, `CreateExamWizard.jsx`, `AppContext.jsx`, `ErrorBoundary`?**
-  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **Why does `useApp()` connect `App.jsx` to `CreateExamWizard.jsx`, `AppContext.jsx`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **What connects `name`, `private`, `version` to the rest of the system?**
-  _79 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _74 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `App.jsx` be split into smaller, more focused modules?**
   _Cohesion score 0.1378048780487805 - nodes in this community are weakly interconnected._
 - **Should `package.json` be split into smaller, more focused modules?**
@@ -121,4 +121,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `main.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1 - nodes in this community are weakly interconnected._
 - **Should `SmartCheckAI — Project Progress Report` be split into smaller, more focused modules?**
-  _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._

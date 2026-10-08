@@ -2620,54 +2620,6 @@
       "source_location": "L1"
     },
     {
-      "id": "project_progress_report_10_1_repository_metadata",
-      "label": "10.1 Repository Metadata",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "10.1 repository metadata",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L297"
-    },
-    {
-      "id": "project_progress_report_10_2_commit_history",
-      "label": "10.2 Commit History",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "10.2 commit history",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L303"
-    },
-    {
-      "id": "project_progress_report_10_3_working_tree_status",
-      "label": "10.3 Working Tree Status",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "10.3 working tree status",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L314"
-    },
-    {
-      "id": "project_progress_report_10_git_activity_summary",
-      "label": "10. Git Activity Summary",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "10. git activity summary",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L295"
-    },
-    {
       "id": "project_progress_report_1_project_overview",
       "label": "1. Project Overview",
       "_origin": "ast",
@@ -2713,7 +2665,7 @@
       "node_kind": "heading",
       "norm_label": "2.3 evaluation & scoring agent (`agents/evaluation_agent/`, `agents/feedback_agent/`, `backend/routes/`)",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L64"
+      "source_location": "L62"
     },
     {
       "id": "project_progress_report_2_4_frontend_integration_src_backend_main_py",
@@ -2725,7 +2677,7 @@
       "node_kind": "heading",
       "norm_label": "2.4 frontend & integration (`src/`, `backend/main.py`)",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L83"
+      "source_location": "L77"
     },
     {
       "id": "project_progress_report_2_module_status",
@@ -2749,19 +2701,19 @@
       "node_kind": "heading",
       "norm_label": "3.1 detected dependencies & frameworks",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L112"
+      "source_location": "L95"
     },
     {
-      "id": "project_progress_report_3_2_stack_variance_planned_vs_actual",
-      "label": "3.2 Stack Variance: Planned vs. Actual",
+      "id": "project_progress_report_3_2_stack_architecture",
+      "label": "3.2 Stack Architecture",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "3.2 stack variance: planned vs. actual",
+      "norm_label": "3.2 stack architecture",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L142"
+      "source_location": "L125"
     },
     {
       "id": "project_progress_report_3_tech_stack_snapshot",
@@ -2773,7 +2725,7 @@
       "node_kind": "heading",
       "norm_label": "3. tech stack snapshot",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L110"
+      "source_location": "L93"
     },
     {
       "id": "project_progress_report_4_1_implemented_endpoints_in_codebase",
@@ -2785,19 +2737,7 @@
       "node_kind": "heading",
       "norm_label": "4.1 implemented endpoints in codebase",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L156"
-    },
-    {
-      "id": "project_progress_report_4_2_planned_vs_actual_endpoint_discrepancies",
-      "label": "4.2 Planned vs. Actual Endpoint Discrepancies",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "4.2 planned vs. actual endpoint discrepancies",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L168"
+      "source_location": "L140"
     },
     {
       "id": "project_progress_report_4_api_contract_status",
@@ -2809,31 +2749,43 @@
       "node_kind": "heading",
       "norm_label": "4. api contract status",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L138"
+    },
+    {
+      "id": "project_progress_report_5_1_tables_schema_mapping",
+      "label": "5.1 Tables & Schema Mapping",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "SmartCheckAI \u2014 Project Progress Report",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5.1 tables & schema mapping",
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L156"
+    },
+    {
+      "id": "project_progress_report_5_2_storage_bucket",
+      "label": "5.2 Storage Bucket",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "SmartCheckAI \u2014 Project Progress Report",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5.2 storage bucket",
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L168"
+    },
+    {
+      "id": "project_progress_report_5_database_schema_storage_status",
+      "label": "5. Database Schema & Storage Status",
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "SmartCheckAI \u2014 Project Progress Report",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5. database schema & storage status",
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
       "source_location": "L154"
-    },
-    {
-      "id": "project_progress_report_5_1_planned_schema_vs_codebase_implementation",
-      "label": "5.1 Planned Schema vs. Codebase Implementation",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5.1 planned schema vs. codebase implementation",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L183"
-    },
-    {
-      "id": "project_progress_report_5_database_schema_status",
-      "label": "5. Database Schema Status",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "5. database schema status",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L179"
     },
     {
       "id": "project_progress_report_6_testing_validation_progress",
@@ -2845,103 +2797,79 @@
       "node_kind": "heading",
       "norm_label": "6. testing & validation progress",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L202"
+      "source_location": "L175"
     },
     {
-      "id": "project_progress_report_7_1_source_code_issues_todos",
-      "label": "7.1 Source Code Issues & TODOs",
+      "id": "project_progress_report_7_1_recently_resolved_items",
+      "label": "7.1 Recently Resolved Items",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "7.1 source code issues & todos",
+      "norm_label": "7.1 recently resolved items",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L220"
+      "source_location": "L187"
     },
     {
-      "id": "project_progress_report_7_known_issues_technical_debt",
-      "label": "7. Known Issues & Technical Debt",
+      "id": "project_progress_report_7_2_current_priority_tasks_phase_3",
+      "label": "7.2 Current Priority Tasks (Phase 3)",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "7. known issues & technical debt",
+      "norm_label": "7.2 current priority tasks (phase 3)",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L218"
+      "source_location": "L196"
     },
     {
-      "id": "project_progress_report_8_risks_blockers",
-      "label": "8. Risks & Blockers",
+      "id": "project_progress_report_7_resolved_items_current_priorities",
+      "label": "7. Resolved Items & Current Priorities",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "8. risks & blockers",
+      "norm_label": "7. resolved items & current priorities",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L252"
+      "source_location": "L185"
     },
     {
-      "id": "project_progress_report_9_1_ocr_agent",
-      "label": "9.1 OCR Agent",
+      "id": "project_progress_report_8_1_repository_metadata",
+      "label": "8.1 Repository Metadata",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "9.1 ocr agent",
+      "norm_label": "8.1 repository metadata",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L267"
+      "source_location": "L210"
     },
     {
-      "id": "project_progress_report_9_2_knowledge_concept_agent",
-      "label": "9.2 Knowledge & Concept Agent",
+      "id": "project_progress_report_8_2_recent_commit_history",
+      "label": "8.2 Recent Commit History",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "9.2 knowledge & concept agent",
+      "norm_label": "8.2 recent commit history",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L273"
+      "source_location": "L216"
     },
     {
-      "id": "project_progress_report_9_3_evaluation_scoring_agent",
-      "label": "9.3 Evaluation & Scoring Agent",
+      "id": "project_progress_report_8_git_activity_summary",
+      "label": "8. Git Activity Summary",
       "_origin": "ast",
       "community": 3,
       "community_name": "SmartCheckAI \u2014 Project Progress Report",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "9.3 evaluation & scoring agent",
+      "norm_label": "8. git activity summary",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L279"
-    },
-    {
-      "id": "project_progress_report_9_4_frontend_integration",
-      "label": "9.4 Frontend & Integration",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "9.4 frontend & integration",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L286"
-    },
-    {
-      "id": "project_progress_report_9_next_steps_concrete_task_plan",
-      "label": "9. Next Steps (Concrete Task Plan)",
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "SmartCheckAI \u2014 Project Progress Report",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "9. next steps (concrete task plan)",
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L265"
+      "source_location": "L208"
     },
     {
       "id": "project_progress_report_backend_ai_agents_backend_requirements_txt_backend_venv",
@@ -2953,7 +2881,7 @@
       "node_kind": "heading",
       "norm_label": "backend & ai agents (`backend/requirements.txt` & `backend/venv`)",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L125"
+      "source_location": "L107"
     },
     {
       "id": "project_progress_report_frontend_package_json",
@@ -2965,7 +2893,7 @@
       "node_kind": "heading",
       "norm_label": "frontend (`package.json`)",
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L114"
+      "source_location": "L97"
     },
     {
       "id": "project_progress_report_smartcheckai_project_progress_report",
@@ -6509,39 +6437,6 @@
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_10_git_activity_summary",
-      "target": "project_progress_report_10_1_repository_metadata",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L297",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_10_git_activity_summary",
-      "target": "project_progress_report_10_2_commit_history",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L303",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_10_git_activity_summary",
-      "target": "project_progress_report_10_3_working_tree_status",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L314",
-      "weight": 1.0
-    },
-    {
       "source": "project_progress_report_1_project_overview",
       "target": "project_progress_report_subsystem_progress_gauges",
       "relation": "contains",
@@ -6582,7 +6477,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L64",
+      "source_location": "L62",
       "weight": 1.0
     },
     {
@@ -6593,7 +6488,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L83",
+      "source_location": "L77",
+      "weight": 1.0
+    },
+    {
+      "source": "project_progress_report_3_1_detected_dependencies_frameworks",
+      "target": "project_progress_report_backend_ai_agents_backend_requirements_txt_backend_venv",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
@@ -6604,12 +6510,12 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L114",
+      "source_location": "L97",
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_3_1_detected_dependencies_frameworks",
-      "target": "project_progress_report_backend_ai_agents_backend_requirements_txt_backend_venv",
+      "source": "project_progress_report_3_tech_stack_snapshot",
+      "target": "project_progress_report_3_2_stack_architecture",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6626,18 +6532,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L112",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_3_tech_stack_snapshot",
-      "target": "project_progress_report_3_2_stack_variance_planned_vs_actual",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L142",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -6648,12 +6543,23 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L140",
+      "weight": 1.0
+    },
+    {
+      "source": "project_progress_report_5_database_schema_storage_status",
+      "target": "project_progress_report_5_1_tables_schema_mapping",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
       "source_location": "L156",
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_4_api_contract_status",
-      "target": "project_progress_report_4_2_planned_vs_actual_endpoint_discrepancies",
+      "source": "project_progress_report_5_database_schema_storage_status",
+      "target": "project_progress_report_5_2_storage_bucket",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6663,69 +6569,47 @@
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_5_database_schema_status",
-      "target": "project_progress_report_5_1_planned_schema_vs_codebase_implementation",
+      "source": "project_progress_report_7_resolved_items_current_priorities",
+      "target": "project_progress_report_7_1_recently_resolved_items",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L183",
+      "source_location": "L187",
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_7_known_issues_technical_debt",
-      "target": "project_progress_report_7_1_source_code_issues_todos",
+      "source": "project_progress_report_7_resolved_items_current_priorities",
+      "target": "project_progress_report_7_2_current_priority_tasks_phase_3",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L220",
+      "source_location": "L196",
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_9_next_steps_concrete_task_plan",
-      "target": "project_progress_report_9_1_ocr_agent",
+      "source": "project_progress_report_8_git_activity_summary",
+      "target": "project_progress_report_8_1_repository_metadata",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L267",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
-      "source": "project_progress_report_9_next_steps_concrete_task_plan",
-      "target": "project_progress_report_9_2_knowledge_concept_agent",
+      "source": "project_progress_report_8_git_activity_summary",
+      "target": "project_progress_report_8_2_recent_commit_history",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L273",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_9_next_steps_concrete_task_plan",
-      "target": "project_progress_report_9_3_evaluation_scoring_agent",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L279",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_9_next_steps_concrete_task_plan",
-      "target": "project_progress_report_9_4_frontend_integration",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L286",
+      "source_location": "L216",
       "weight": 1.0
     },
     {
@@ -6741,18 +6625,18 @@
     },
     {
       "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_3_tech_stack_snapshot",
+      "target": "project_progress_report_4_api_contract_status",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L110",
+      "source_location": "L138",
       "weight": 1.0
     },
     {
       "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_4_api_contract_status",
+      "target": "project_progress_report_5_database_schema_storage_status",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6763,68 +6647,35 @@
     },
     {
       "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_5_database_schema_status",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L179",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_smartcheckai_project_progress_report",
       "target": "project_progress_report_6_testing_validation_progress",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L202",
+      "source_location": "L175",
       "weight": 1.0
     },
     {
       "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_7_known_issues_technical_debt",
+      "target": "project_progress_report_7_resolved_items_current_priorities",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L218",
+      "source_location": "L185",
       "weight": 1.0
     },
     {
       "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_8_risks_blockers",
+      "target": "project_progress_report_8_git_activity_summary",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L252",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_9_next_steps_concrete_task_plan",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L265",
-      "weight": 1.0
-    },
-    {
-      "source": "project_progress_report_smartcheckai_project_progress_report",
-      "target": "project_progress_report_10_git_activity_summary",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "PROJECT_PROGRESS_REPORT.md",
-      "source_location": "L295",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -6836,6 +6687,17 @@
       "confidence_score": 1.0,
       "source_file": "PROJECT_PROGRESS_REPORT.md",
       "source_location": "L30",
+      "weight": 1.0
+    },
+    {
+      "source": "project_progress_report_smartcheckai_project_progress_report",
+      "target": "project_progress_report_3_tech_stack_snapshot",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "PROJECT_PROGRESS_REPORT.md",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -8263,5 +8125,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "8dff5ab9ad76b5c2f0de9d899c34d3f54967d859"
+  "built_at_commit": "768b53ba2ed7e0e26e1eee8265abbf57827d81e0"
 }

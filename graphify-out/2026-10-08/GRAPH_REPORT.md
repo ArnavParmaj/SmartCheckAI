@@ -5,17 +5,17 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 277 nodes · 439 edges · 25 communities (8 shown, 15 thin omitted)
+- 277 nodes · 432 edges · 26 communities (8 shown, 16 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 6 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8dff5ab9`
+- Built from commit: `768b53ba`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- App.jsx
+- useApp
 - package.json
 - main.py
 - SmartCheckAI — Project Progress Report
@@ -35,6 +35,7 @@
 - ocr_routes.py
 - Application Views (`src/components/`)
 - CreateExamWizard.jsx
+- post
 - routes/__init__.py
 - start.sh
 - stop.sh
@@ -66,10 +67,10 @@
 ## Import Cycles
 - None detected.
 
-## Communities (25 total, 15 thin omitted)
+## Communities (26 total, 16 thin omitted)
 
-### Community 0 - "App.jsx"
-Cohesion: 0.14
+### Community 0 - "useApp"
+Cohesion: 0.12
 Nodes (26): react, App(), AppShell(), ACTOR_CONFIG, AuditTrailView(), SEVERITY_CONFIG, AuthView(), DashboardView() (+18 more)
 
 ### Community 1 - "package.json"
@@ -101,21 +102,21 @@ Cohesion: 0.21
 Nodes (9): CreateExamWizard(), GRADES, STEPS, SUBJECTS, TopBar(), checkBackendHealth(), extractQuestionsFromFile(), extractRubricFromFile() (+1 more)
 
 ## Knowledge Gaps
-- **79 isolated node(s):** `name`, `private`, `version`, `type`, `dev` (+74 more)
+- **79 isolated node(s):** `STEPS`, `SUBJECTS`, `GRADES`, `STATUSES`, `navItems` (+74 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 155 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **15 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **16 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `App.jsx` to `package.json`, `CreateExamWizard.jsx`, `AppContext.jsx`, `ErrorBoundary`?**
+- **Why does `react` connect `useApp` to `package.json`, `CreateExamWizard.jsx`, `AppContext.jsx`?**
   _High betweenness centrality (0.073) - this node is a cross-community bridge._
-- **Why does `useApp()` connect `App.jsx` to `CreateExamWizard.jsx`, `AppContext.jsx`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
-- **What connects `name`, `private`, `version` to the rest of the system?**
+- **Why does `useApp()` connect `useApp` to `CreateExamWizard.jsx`, `AppContext.jsx`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **What connects `STEPS`, `SUBJECTS`, `GRADES` to the rest of the system?**
   _79 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `App.jsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.1378048780487805 - nodes in this community are weakly interconnected._
+- **Should `useApp` be split into smaller, more focused modules?**
+  _Cohesion score 0.12403100775193798 - nodes in this community are weakly interconnected._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.06060606060606061 - nodes in this community are weakly interconnected._
 - **Should `main.py` be split into smaller, more focused modules?**
