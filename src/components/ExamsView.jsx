@@ -3,13 +3,16 @@ import { useApp } from '../context/AppContext';
 import { mockStudentSubmissions, getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
 
 export default function ExamsView() {
-  const { exams, navigate } = useApp();
+  const { exams, navigate, deleteExam } = useApp();
   const [search, setSearch] = useState('');
 
-  const filtered = exams.filter(e =>
-    e.title.toLowerCase().includes(search.toLowerCase()) ||
-    e.subject.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = (exams || []).filter(e => {
+    if (!e) return false;
+    const title = (e.title || '').toLowerCase();
+    const subject = (e.subject || '').toLowerCase();
+    const query = (search || '').toLowerCase();
+    return title.includes(query) || subject.includes(query);
+  });
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -69,12 +72,26 @@ export default function ExamsView() {
 
               <div className="flex items-center justify-between pt-2 border-t border-outline-variant">
                 <span className="text-[11px] text-on-surface-variant">{exam.dateCreated}</span>
-                <button
-                  onClick={e => { e.stopPropagation(); navigate('exam-detail', { exam }); }}
-                  className="btn-outline text-xs"
-                >
-                  View Details
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (window.confirm(`Are you sure you want to delete "${exam.title}"?`)) {
+                        deleteExam(exam.id);
+                      }
+                    }}
+                    className="p-1 rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container transition-colors"
+                    title="Delete Exam"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                  <button
+                    onClick={e => { e.stopPropagation(); navigate('exam-detail', { exam }); }}
+                    className="btn-outline text-xs"
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
             </div>
           );

@@ -1,10 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { checkBackendHealth } from '../lib/backendApi';
 
 export default function TopBar() {
   const { user, logout, navigate, isDark, toggleDark, setSidebarOpen, showNotification } = useApp();
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [backendStatus, setBackendStatus] = useState('checking'); // 'checking' | 'connected' | 'disconnected'
+  const [backendLatency, setBackendLatency] = useState(null);
+
+  const verifyBackend = async () => {
+    setBackendStatus('checking');
+    const start = Date.now();
+    try {
+      const res = await checkBackendHealth();
+      if (res?.status === 'ok') {
+        setBackendLatency(Date.now() - start);
+        setBackendStatus('connected');
+      } else {
+        setBackendStatus('disconnected');
+      }
+    } catch {
+      setBackendStatus('disconnected');
+    }
+  };
+
+  useEffect(() => {
+    verifyBackend();
+    const interval = setInterval(verifyBackend, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   const notifications = [
     { id: 1, text: '3 submissions flagged for review in Final Physics Paper', time: '5 min ago', unread: true },
@@ -23,7 +48,37 @@ export default function TopBar() {
       </button>
 
       {/* Page title breadcrumb area */}
-      <div className="flex-1" />
+      <div className="flex-1 flex items-center gap-2">
+        {/* Live Backend Indicator Badge */}
+        <button
+          onClick={verifyBackend}
+          title="Click to re-check AI Engine connection"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+            backendStatus === 'connected'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+              : backendStatus === 'checking'
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+              : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              backendStatus === 'connected'
+                ? 'bg-emerald-500 animate-pulse'
+                : backendStatus === 'checking'
+                ? 'bg-amber-500 animate-ping'
+                : 'bg-rose-500'
+            }`}
+          />
+          <span className="hidden sm:inline font-mono">
+            {backendStatus === 'connected'
+              ? `AI Engine: Online (${backendLatency}ms)`
+              : backendStatus === 'checking'
+              ? 'Connecting AI Engine...'
+              : 'AI Engine: Offline'}
+          </span>
+        </button>
+      </div>
 
       {/* Right side actions */}
       <div className="flex items-center gap-1">
@@ -82,11 +137,11 @@ export default function TopBar() {
           >
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-on-primary text-xs font-bold">
-                {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                {(user?.name || user?.email || 'Teacher').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || 'T'}
               </span>
             </div>
             <span className="hidden sm:block text-body-sm font-medium text-on-surface max-w-[120px] truncate">
-              {user?.name?.split(' ')[0]}
+              {(user?.name || user?.email || 'Teacher').split(' ')[0]}
             </span>
             <span className="material-symbols-outlined text-[16px] text-on-surface-variant mr-1">expand_more</span>
           </button>

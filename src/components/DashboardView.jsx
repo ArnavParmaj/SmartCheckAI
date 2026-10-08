@@ -9,18 +9,26 @@ export default function DashboardView() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
 
-  const filtered = exams.filter(e => {
+  const filtered = (exams || []).filter(e => {
+    if (!e) return false;
     const matchStatus = filter === 'All' || e.status === filter;
-    const matchSearch = e.title.toLowerCase().includes(search.toLowerCase()) ||
-      e.subject.toLowerCase().includes(search.toLowerCase());
+    const title = (e.title || '').toLowerCase();
+    const subject = (e.subject || '').toLowerCase();
+    const query = (search || '').toLowerCase();
+    const matchSearch = title.includes(query) || subject.includes(query);
     return matchStatus && matchSearch;
   });
 
+  const validExamsWithConfidence = (exams || []).filter(e => e && typeof e.avgConfidence === 'number' && !isNaN(e.avgConfidence) && e.avgConfidence > 0);
+  const avgConf = validExamsWithConfidence.length > 0
+    ? Math.round(validExamsWithConfidence.reduce((sum, e) => sum + e.avgConfidence, 0) / validExamsWithConfidence.length)
+    : 0;
+
   const stats = {
-    total: exams.length,
-    pending: exams.reduce((sum, e) => sum + e.pendingReview, 0),
-    avgConfidence: Math.round(exams.filter(e => e.avgConfidence).reduce((sum, e, _, arr) => sum + e.avgConfidence / arr.length, 0)),
-    completed: exams.filter(e => e.status === 'Completed').length,
+    total: (exams || []).length,
+    pending: (exams || []).reduce((sum, e) => sum + (Number(e?.pendingReview) || 0), 0),
+    avgConfidence: avgConf,
+    completed: (exams || []).filter(e => e?.status === 'Completed').length,
   };
 
   return (
@@ -76,7 +84,7 @@ export default function DashboardView() {
       </div>
 
       {/* Quick Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="card p-4 flex items-center gap-4">
           <div className="p-3 bg-primary-fixed rounded-xl">
             <span className="material-symbols-outlined text-primary text-[24px]">school</span>
@@ -97,15 +105,6 @@ export default function DashboardView() {
             <p className="text-headline-md font-bold text-on-surface">
               {Math.round(exams.filter(e => e.avgScore).reduce((sum, e, _, arr) => sum + e.avgScore / arr.length, 0))}%
             </p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="p-3 bg-tertiary-fixed rounded-xl">
-            <span className="material-symbols-outlined text-tertiary-container text-[24px]">auto_awesome</span>
-          </div>
-          <div>
-            <p className="text-body-sm text-on-surface-variant">AI Time Saved (est.)</p>
-            <p className="text-headline-md font-bold text-on-surface">~18 hrs</p>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchTeacherExams, createExamInDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB, updateTeacherProfile } from '../lib/api';
+import { fetchTeacherExams, createExamInDB, deleteExamFromDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB, updateTeacherProfile } from '../lib/api';
 import { mockExams, mockStudentSubmissions, mockAuditEvents, mockUser } from '../data/mockData';
 
 const AppContext = createContext(null);
@@ -19,6 +19,12 @@ export function AppProvider({ children }) {
   const [isDark, setIsDark] = useState(false);
   const [notification, setNotification] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Notification system
+  const showNotification = useCallback((message, type = 'info') => {
+    setNotification({ message, type, id: Date.now() });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
 
   // Initialize Auth Session from Supabase
   useEffect(() => {
@@ -291,7 +297,28 @@ export function AppProvider({ children }) {
       showNotification('Exam created & saved in Supabase!', 'success');
       return created;
     }
-  }, [user, isDemo]);
+  }, [user, isDemo, showNotification]);
+
+  // Delete exam
+  const deleteExam = useCallback(async (examId) => {
+    try {
+      if (!isDemo) {
+        await deleteExamFromDB(examId);
+      }
+      setExams(prev => prev.filter(e => e.id !== examId));
+      setSubmissions(prev => prev.filter(s => s.examId !== examId));
+      if (activeExam?.id === examId) {
+        setActiveExam(null);
+      }
+      showNotification('Exam deleted successfully.', 'success');
+      navigate('exams');
+      return { success: true };
+    } catch (err) {
+      console.error('Delete exam error:', err);
+      showNotification('Failed to delete exam: ' + err.message, 'error');
+      return { error: err.message };
+    }
+  }, [isDemo, activeExam, navigate, showNotification]);
 
   // Toggle dark mode
   const toggleDark = useCallback(() => {
@@ -304,12 +331,6 @@ export function AppProvider({ children }) {
       }
       return next;
     });
-  }, []);
-
-  // Notification system
-  const showNotification = useCallback((message, type = 'info') => {
-    setNotification({ message, type, id: Date.now() });
-    setTimeout(() => setNotification(null), 3000);
   }, []);
 
   // Get submissions for an exam
@@ -342,11 +363,16 @@ export function AppProvider({ children }) {
     return { success: true };
   }, [user, isDemo, showNotification]);
 
+  // Add new submission
+  const addSubmission = useCallback((newSubmission) => {
+    setSubmissions(prev => [newSubmission, ...prev]);
+  }, []);
+
   const value = {
     isAuthenticated, user, isDemo, loading, login, demoLogin, signup, logout,
     currentView, navigate, activeExam, setActiveExam, activeSubmission, setActiveSubmission,
     exams, submissions, auditEvents,
-    overrideScore, approveSubmission, updateOcrText, createExam, uploadAnswerSheetDB,
+    overrideScore, approveSubmission, updateOcrText, createExam, deleteExam, uploadAnswerSheetDB, addSubmission,
     getSubmissionsForExam, updateUserProfile,
     isDark, toggleDark,
     notification, showNotification,

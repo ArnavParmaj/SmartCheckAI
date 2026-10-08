@@ -69,7 +69,7 @@ export default function OCRReviewView() {
                 : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
             }`}
           >
-            Q{i + 1}
+            {ans.questionLabel || `Q${i + 1}`}
             {ans.aiConfidence < 80 && (
               <span className="ml-1 inline-block w-1.5 h-1.5 bg-tertiary-fixed-dim rounded-full" />
             )}
@@ -84,31 +84,42 @@ export default function OCRReviewView() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-bright">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant">photo_camera</span>
-                <span className="text-label-md font-semibold text-on-surface">Handwritten Scan</span>
+                <span className="text-label-md font-semibold text-on-surface">Uploaded Document / Answer Sheet</span>
               </div>
               <span className="text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
-                Q{activeSubmission.answers.indexOf(currentAnswer) + 1}
+                {currentAnswer.questionLabel || `Q${activeSubmission.answers.indexOf(currentAnswer) + 1}`}
               </span>
             </div>
 
-            <div className="flex-1 p-4 bg-surface-container-low flex items-center justify-center min-h-[300px]">
-              {/* Simulated handwritten paper */}
-              <div className="w-full max-w-sm bg-white rounded-lg shadow-modal border border-outline-variant p-6 relative">
-                {/* Paper lines */}
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="border-b border-blue-100 py-4">
-                    {i === 0 && (
-                      <p className="font-mono text-on-surface leading-relaxed" style={{ fontFamily: 'Georgia, serif', opacity: 0.85, fontSize: '13px' }}>
-                        {currentAnswer.ocrText}
-                      </p>
-                    )}
-                  </div>
-                ))}
-                {/* Corner stamp */}
-                <div className="absolute top-2 right-2 text-[11px] text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded">
-                  {activeSubmission.rollNumber}
+            <div className="flex-1 p-4 bg-surface-container-low flex items-center justify-center min-h-[350px] overflow-auto">
+              {activeSubmission.imagePreview ? (
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                  <img
+                    src={activeSubmission.imagePreview}
+                    alt="Uploaded Answer Sheet"
+                    className="max-h-[550px] w-auto max-w-full object-contain rounded-lg shadow-sm border border-outline-variant"
+                  />
+                  <p className="text-[11px] text-on-surface-variant mt-2">
+                    {activeSubmission.answers.length} question(s) recognized via Local AI OCR
+                  </p>
                 </div>
-              </div>
+              ) : (
+                /* Simulated handwritten paper */
+                <div className="w-full max-w-sm bg-white rounded-lg shadow-modal border border-outline-variant p-6 relative">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="border-b border-blue-100 py-4">
+                      {i === 0 && (
+                        <p className="font-mono text-on-surface leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Georgia, serif', opacity: 0.85, fontSize: '13px' }}>
+                          {currentAnswer.ocrText}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <div className="absolute top-2 right-2 text-[11px] text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded">
+                    {activeSubmission.rollNumber}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -117,7 +128,7 @@ export default function OCRReviewView() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-bright">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-on-surface-variant">document_scanner</span>
-                <span className="text-label-md font-semibold text-on-surface">OCR Extracted Text</span>
+                <span className="text-label-md font-semibold text-on-surface">AI OCR Extracted Text</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={getConfidenceClass(currentAnswer.aiConfidence)}>{currentAnswer.aiConfidence}%</span>
@@ -137,38 +148,25 @@ export default function OCRReviewView() {
 
             {/* Question */}
             <div className="px-4 pt-4 pb-2 bg-primary-fixed/20 border-b border-outline-variant">
-              <p className="text-label-sm text-primary uppercase tracking-wider mb-1">Question</p>
+              <p className="text-label-sm text-primary uppercase tracking-wider mb-1">
+                {currentAnswer.questionLabel || `Question ${activeSubmission.answers.indexOf(currentAnswer) + 1}`}
+              </p>
               <p className="text-body-sm text-on-surface">{currentAnswer.questionText}</p>
               <p className="text-[11px] text-on-surface-variant mt-1">Max marks: {currentAnswer.maxMarks}</p>
             </div>
 
             {/* OCR Text Area */}
-            <div className="flex-1 p-4">
+            <div className="flex-1 p-4 overflow-y-auto">
               {editingId === currentAnswer.questionId ? (
                 <textarea
                   value={editTexts[currentAnswer.questionId]}
                   onChange={e => setEditTexts(prev => ({ ...prev, [currentAnswer.questionId]: e.target.value }))}
-                  className="input-field h-full resize-none min-h-[200px]"
+                  className="input-field h-full w-full resize-none min-h-[250px] font-mono text-sm leading-relaxed"
                   placeholder="Edit OCR extracted text..."
                 />
               ) : (
-                <div className="text-body-md text-on-surface leading-relaxed">
-                  {currentAnswer.aiConfidence < 90 ? (
-                    <p>
-                      {highlightLowConfidence(editTexts[currentAnswer.questionId], currentAnswer.aiConfidence).map((w, i) => (
-                        <span key={i}>
-                          {w.isLowConfidence ? (
-                            <span
-                              className="highlight-low-confidence"
-                              title="Low OCR confidence - click Edit to correct"
-                            >{w.word}</span>
-                          ) : w.word}{' '}
-                        </span>
-                      ))}
-                    </p>
-                  ) : (
-                    <p>{editTexts[currentAnswer.questionId]}</p>
-                  )}
+                <div className="text-body-md text-on-surface leading-relaxed whitespace-pre-wrap font-sans bg-surface-container-low p-4 rounded-xl border border-outline-variant">
+                  {editTexts[currentAnswer.questionId]}
                 </div>
               )}
             </div>

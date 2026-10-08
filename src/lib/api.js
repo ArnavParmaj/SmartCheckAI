@@ -208,3 +208,74 @@ export async function updateTeacherProfile(teacherId, profileData) {
     return { data: null, error: err };
   }
 }
+
+// Delete exam and all cascaded questions, answer sheets, answers and evaluations
+export async function deleteExamFromDB(examId) {
+  try {
+    // 1. Find all question IDs for this exam
+    const { data: qRows } = await supabase
+      .from('questions')
+      .select('id')
+      .eq('exam_id', examId);
+
+    const questionIds = (qRows || []).map(q => q.id);
+
+    // Delete answer_keys for these questions
+    if (questionIds.length > 0) {
+      await supabase
+        .from('answer_keys')
+        .delete()
+        .in('question_id', questionIds);
+    }
+
+    // 2. Find all answer_sheets for this exam
+    const { data: sheetRows } = await supabase
+      .from('answer_sheets')
+      .select('id')
+      .eq('exam_id', examId);
+
+    const sheetIds = (sheetRows || []).map(s => s.id);
+
+    if (sheetIds.length > 0) {
+      // Delete student_answers
+      await supabase
+        .from('student_answers')
+        .delete()
+        .in('answer_sheet_id', sheetIds);
+
+      // Delete evaluations
+      await supabase
+        .from('evaluations')
+        .delete()
+        .in('answer_sheet_id', sheetIds);
+
+      // Delete answer_sheets
+      await supabase
+        .from('answer_sheets')
+        .delete()
+        .eq('exam_id', examId);
+    }
+
+    // 3. Delete questions
+    await supabase
+      .from('questions')
+      .delete()
+      .eq('exam_id', examId);
+
+    // 4. Delete exam
+    const { error: examDelErr } = await supabase
+      .from('exams')
+      .delete()
+      .eq('id', examId);
+
+    if (examDelErr) {
+      console.error('Error deleting exam:', examDelErr);
+      throw examDelErr;
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to delete exam from DB:', err);
+    throw err;
+  }
+}

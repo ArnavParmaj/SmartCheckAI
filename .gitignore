@@ -41,3 +41,11 @@ graphify-out/cache/
 __pycache__/
 *.py[cod]
 *$py.class
+backend/venv/
+.venv/
+venv/
+
+# Process PID files
+*.pid
+.*_pid
+.pid

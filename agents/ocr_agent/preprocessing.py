@@ -81,27 +81,20 @@ def preprocess_image(image_path: str) -> str:
     # 3. Apply deskewing (correct tilted scans)
     deskewed = deskew_image(gray)
 
-    # 4. Apply denoising (cv2.fastNlMeansDenoising)
-    denoised = cv2.fastNlMeansDenoising(
-        deskewed,
-        h=10,
-        templateWindowSize=7,
-        searchWindowSize=21,
-    )
+    # 4. Only apply contrast stretching if dynamic range is severely constrained (< 100)
+    img_min, img_max = int(np.min(deskewed)), int(np.max(deskewed))
+    if img_max - img_min < 100:
+        processed = cv2.normalize(deskewed, None, 0, 255, cv2.NORM_MINMAX)
+    else:
+        processed = deskewed
 
-    # 5. Enhance contrast using CLAHE (Contrast Limited Adaptive Histogram Equalization)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(denoised)
-
-    # 6. Resize to minimum 1200px width if smaller, maintaining aspect ratio
-    (h, w) = enhanced.shape[:2]
+    # 5. Resize to minimum 1200px width if smaller, maintaining aspect ratio
+    (h, w) = processed.shape[:2]
     if w < 1200:
         scale = 1200.0 / float(w)
         new_w = 1200
         new_h = int(h * scale)
-        processed = cv2.resize(enhanced, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
-    else:
-        processed = enhanced
+        processed = cv2.resize(processed, (new_w, new_h), interpolation=cv2.INTER_LANCZOS4)
 
     # 7. Save processed image to a temp file
     temp_file = tempfile.NamedTemporaryFile(suffix="_preprocessed.png", delete=False)

@@ -10,7 +10,7 @@ import re
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
@@ -25,9 +25,162 @@ for p in [str(project_root), str(backend_dir)]:
 from agents.ocr_agent.preprocessing import preprocess_image
 from agents.ocr_agent.ocr import run_ocr
 from agents.ocr_agent.segmentation import segment_answers
+from agents.ocr_agent.gemini_ocr import (
+    is_gemini_available,
+    gemini_extract_questions,
+    gemini_extract_rubric,
+    gemini_extract_student_answers,
+)
 from config.supabase_client import supabase
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
+
+
+def _extract_page_images(file_bytes: bytes, filename: str) -> Tuple[List[str], List[str]]:
+    """Helper to convert uploaded file (PDF or image) to a list of page image filepaths."""
+    temp_files = []
+    file_ext = Path(filename or "upload").suffix.lower()
+
+    temp_input = tempfile.NamedTemporaryFile(suffix=file_ext, delete=False)
+    temp_input.write(file_bytes)
+    temp_input.close()
+    temp_files.append(temp_input.name)
+
+    page_images = []
+    if file_ext == ".pdf":
+        try:
+            import fitz
+            pdf_doc = fitz.open(temp_input.name)
+            for page_index in range(len(pdf_doc)):
+                page = pdf_doc.load_page(page_index)
+                pixmap = page.get_pixmap(dpi=200)
+                page_temp = tempfile.NamedTemporaryFile(
+                    suffix=f"_page_{page_index}.png", delete=False
+                )
+                pixmap.save(page_temp.name)
+                page_temp.close()
+                page_images.append(page_temp.name)
+                temp_files.append(page_temp.name)
+            pdf_doc.close()
+        except ImportError:
+            pass
+    else:
+        page_images.append(temp_input.name)
+
+    return page_images, temp_files
+
+
+@router.post("/extract-questions")
+async def extract_questions_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """
+    Extract structured questions, sub-questions, and marks from a Question Paper:
+    Uses Gemini Multimodal Vision when available, seamlessly falling back to local OCR.
+    """
+    file_bytes = await file.read()
+    if not file_bytes:
+        return {"status": "error", "message": "Uploaded file is empty"}
+
+    page_images, temp_files = _extract_page_images(file_bytes, file.filename or "question_paper.jpg")
+
+    try:
+        if is_gemini_available():
+            gemini_qs = gemini_extract_questions(page_images)
+            if gemini_qs:
+                return {
+                    "status": "success",
+                    "engine": "gemini-2.5-flash",
+                    "questions": gemini_qs,
+                }
+
+        # Fallback to local RapidOCR + Segmentation
+        all_segmented = {}
+        for p in page_images:
+            prep = preprocess_image(p)
+            temp_files.append(prep)
+            res = run_ocr(prep)
+            segs = segment_answers(res.get("text", ""), lines=res.get("lines"))
+            all_segmented.update(segs)
+
+        fallback_qs = [
+            {
+                "id": k,
+                "text": v,
+                "marks": 5,
+                "choice_group": k.split("(")[0] if "(" in k else k,
+                "condition": "OR" if "[OR]" in v else ("AND" if "[AND]" in v else None),
+            }
+            for k, v in all_segmented.items()
+        ]
+
+        return {
+            "status": "success",
+            "engine": "local-rapidocr",
+            "questions": fallback_qs,
+        }
+    finally:
+        for f in temp_files:
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception:
+                pass
+
+
+@router.post("/extract-rubric")
+async def extract_rubric_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """
+    Extract grading criteria and mark breakdowns from a Marking Rubric:
+    Uses Gemini Multimodal Vision when available, falling back to local OCR.
+    """
+    file_bytes = await file.read()
+    if not file_bytes:
+        return {"status": "error", "message": "Uploaded file is empty"}
+
+    page_images, temp_files = _extract_page_images(file_bytes, file.filename or "rubric.jpg")
+
+    try:
+        if is_gemini_available():
+            rubrics = gemini_extract_rubric(page_images)
+            if rubrics:
+                return {
+                    "status": "success",
+                    "engine": "gemini-2.5-flash",
+                    "rubrics": rubrics,
+                }
+
+        # Fallback to local RapidOCR
+        all_text = ""
+        for p in page_images:
+            prep = preprocess_image(p)
+            temp_files.append(prep)
+            res = run_ocr(prep)
+            all_text += "\n" + res.get("text", "")
+
+        fallback_rubrics = [
+            {
+                "question_id": "General",
+                "criterion": "General Evaluation",
+                "max_marks": 5,
+                "description": all_text.strip()[:300],
+            }
+        ]
+
+        return {
+            "status": "success",
+            "engine": "local-rapidocr",
+            "rubrics": fallback_rubrics,
+        }
+    finally:
+        for f in temp_files:
+            try:
+                if os.path.exists(f):
+                    os.remove(f)
+            except Exception:
+                pass
 
 
 @router.post("/process")
@@ -100,34 +253,60 @@ async def process_ocr(
             # Single image file (JPG, PNG, WebP, etc.)
             page_image_paths.append(temp_input.name)
 
-        # Step 3: Run pipeline across each page (Preprocessing -> OCR -> Segmentation)
+        # Step 3: Run pipeline across each page (Gemini Multimodal or Local OCR Fallback)
         combined_answers: Dict[str, str] = {}
         all_confidences = []
+        engine_used = "local-rapidocr"
 
-        for page_path in page_image_paths:
-            # A. Preprocess image (deskew, denoise, CLAHE, resize)
-            preprocessed_path = preprocess_image(page_path)
-            temp_files_to_clean.append(preprocessed_path)
+        # Try Gemini Multimodal handwriting transcription first if configured
+        if is_gemini_available():
+            try:
+                gemini_answers = gemini_extract_student_answers(page_image_paths)
+                if gemini_answers:
+                    combined_answers = gemini_answers
+                    all_confidences = [0.985]
+                    engine_used = "gemini-2.5-flash"
+            except Exception as e:
+                pass
 
-            # B. Execute local PaddleOCR
-            ocr_result = run_ocr(preprocessed_path)
-            extracted_text = ocr_result.get("text", "")
-            page_confidence = ocr_result.get("confidence", 0.0)
+        if not combined_answers:
+            for page_path in page_image_paths:
+                # A. Preprocess image (deskew, dynamic range, resize)
+                preprocessed_path = preprocess_image(page_path)
+                temp_files_to_clean.append(preprocessed_path)
 
-            if page_confidence > 0:
-                all_confidences.append(page_confidence)
+                # B. Execute local PaddleOCR/RapidOCR
+                ocr_result = run_ocr(preprocessed_path)
+                extracted_text = ocr_result.get("text", "")
+                page_confidence = ocr_result.get("confidence", 0.0)
 
-            # C. Segment extracted text into questions
-            page_answers = segment_answers(extracted_text)
+                if page_confidence > 0:
+                    all_confidences.append(page_confidence)
 
-            # Merge page answers with previous pages (handles multi-page questions)
-            for q_key, ans_text in page_answers.items():
-                if not ans_text:
-                    continue
-                if q_key in combined_answers:
-                    combined_answers[q_key] = f"{combined_answers[q_key]}\n{ans_text}".strip()
-                else:
-                    combined_answers[q_key] = ans_text
+                # C. Segment extracted text into questions using spatial layout
+                page_answers = segment_answers(extracted_text, lines=ocr_result.get("lines"))
+
+                # Merge page answers with previous pages (handles multi-page questions)
+                for q_key, ans_text in page_answers.items():
+                    if not ans_text:
+                        continue
+                    if q_key in combined_answers:
+                        combined_answers[q_key] = f"{combined_answers[q_key]}\n{ans_text}".strip()
+                    else:
+                        combined_answers[q_key] = ans_text
+
+        # Naturally sort combined_answers by question number and sub-part (Q1(a), Q1(b)...)
+        def sort_key(k: str):
+            m = re.match(r"Q(\d+)(?:\((.+)\))?", k, re.IGNORECASE)
+            if m:
+                return (int(m.group(1)), m.group(2) or "")
+            num = re.search(r"\d+", k)
+            return (int(num.group()) if num else 999, k)
+
+        combined_answers = {
+            k: combined_answers[k]
+            for k in sorted(combined_answers.keys(), key=sort_key)
+        }
 
         # If no answers extracted, provide empty Q1 entry
         if not combined_answers:
@@ -189,6 +368,7 @@ async def process_ocr(
         # Step 6: Return formatted JSON response
         return {
             "status": "success",
+            "engine": engine_used,
             "ocr_confidence": overall_confidence,
             "answers": combined_answers,
         }

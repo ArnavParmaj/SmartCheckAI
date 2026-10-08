@@ -109,12 +109,12 @@ export default function Sidebar() {
           >
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
               <span className="text-on-primary text-xs font-bold">
-                {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                {(user?.name || user?.email || 'Teacher').split(' ').filter(Boolean).map(n => n[0]).join('').slice(0, 2) || 'T'}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-on-surface truncate">{user?.name}</p>
-              <p className="text-[10px] text-on-surface-variant truncate">{user?.email}</p>
+              <p className="text-xs font-semibold text-on-surface truncate">{user?.name || user?.email || 'Teacher'}</p>
+              <p className="text-[10px] text-on-surface-variant truncate">{user?.email || 'teacher@smartcheck.ai'}</p>
             </div>
           </div>
         </div>

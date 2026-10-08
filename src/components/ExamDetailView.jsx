@@ -1,18 +1,23 @@
+import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { mockStudentSubmissions, getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
 
 export default function ExamDetailView() {
-  const { activeExam, navigate } = useApp();
+  const { activeExam, navigate, deleteExam, getSubmissionsForExam } = useApp();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!activeExam) {
     navigate('exams');
     return null;
   }
 
-  const submissions = mockStudentSubmissions.filter(s => s.examId === activeExam.id);
+  const liveSubs = getSubmissionsForExam ? getSubmissionsForExam(activeExam.id) : [];
+  const submissions = liveSubs.length > 0 ? liveSubs : mockStudentSubmissions.filter(s => s.examId === activeExam.id);
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
+      {/* Top Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('exams')} className="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -24,10 +29,20 @@ export default function ExamDetailView() {
           </div>
           <p className="text-body-sm text-on-surface-variant">{activeExam.subject} · {activeExam.grade} · {activeExam.dateCreated}</p>
         </div>
-        <button onClick={() => navigate('export')} className="btn-outline hidden sm:flex items-center gap-1">
-          <span className="material-symbols-outlined text-[18px]">file_download</span>
-          Export
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate('export')} className="btn-outline hidden sm:flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px]">file_download</span>
+            Export
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="btn-outline text-error hover:bg-error-container hover:border-error flex items-center gap-1 transition-colors"
+            title="Delete this exam"
+          >
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+            Delete Exam
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -136,6 +151,50 @@ export default function ExamDetailView() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="card p-6 max-w-md w-full shadow-modal bg-surface-container-high border border-outline-variant">
+            <div className="flex items-center gap-3 mb-3 text-error">
+              <span className="material-symbols-outlined text-[28px]">warning</span>
+              <h3 className="text-headline-sm font-bold text-on-surface">Delete Exam?</h3>
+            </div>
+            <p className="text-body-sm text-on-surface-variant mb-6">
+              Are you sure you want to permanently delete <strong>"{activeExam.title}"</strong>? All associated questions, rubrics, student answer sheets, and grading records will be deleted from the database. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                className="btn-ghost"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setIsDeleting(true);
+                  await deleteExam(activeExam.id);
+                }}
+                disabled={isDeleting}
+                className="btn-primary bg-error hover:bg-error/90 text-on-error flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    Yes, Delete Exam
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -47,7 +47,18 @@ function AppShell() {
 }
 
 export default function App() {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, loading } = useApp();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-body-sm text-on-surface-variant font-medium">Loading SmartCheck AI...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) return <AuthView />;
 

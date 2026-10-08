@@ -2,6 +2,8 @@ fastapi
 uvicorn
 python-dotenv
 supabase
+rapidocr-onnxruntime
+onnxruntime
 paddleocr
 paddlepaddle
 sentence-transformers

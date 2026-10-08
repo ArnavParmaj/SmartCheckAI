@@ -1,0 +1,393 @@
+{
+  "communities": {
+    "0": [
+      "ref_react",
+      "src_app",
+      "src_app_app",
+      "src_app_appshell",
+      "src_components_audittrailview",
+      "src_components_audittrailview_actor_config",
+      "src_components_audittrailview_audittrailview",
+      "src_components_audittrailview_severity_config",
+      "src_components_authview",
+      "src_components_authview_authview",
+      "src_components_createexamwizard",
+      "src_components_createexamwizard_createexamwizard",
+      "src_components_createexamwizard_grades",
+      "src_components_createexamwizard_steps",
+      "src_components_createexamwizard_subjects",
+      "src_components_dashboardview",
+      "src_components_dashboardview_dashboardview",
+      "src_components_dashboardview_statcard",
+      "src_components_dashboardview_statuses",
+      "src_components_profileview",
+      "src_components_profileview_profileview",
+      "src_components_resultsview",
+      "src_components_resultsview_resultsview",
+      "src_components_sidebar",
+      "src_components_sidebar_bottomitems",
+      "src_components_sidebar_navitems",
+      "src_components_sidebar_sidebar",
+      "src_components_toast",
+      "src_components_toast_toast",
+      "src_components_topbar",
+      "src_components_topbar_topbar",
+      "src_context_appcontext_useapp"
+    ],
+    "1": [
+      "package",
+      "package_dependencies",
+      "package_dependencies_lucide_react",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_supabase_supabase_js",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_preview",
+      "package_type",
+      "package_version",
+      "ref_autoprefixer",
+      "ref_lucide_react",
+      "ref_postcss",
+      "ref_react_dom",
+      "ref_supabase_supabase_js",
+      "ref_tailwindcss",
+      "ref_types_react",
+      "ref_types_react_dom",
+      "ref_vite",
+      "ref_vitejs_plugin_react",
+      "vite_config"
+    ],
+    "2": [
+      "backend_main",
+      "backend_main_health",
+      "backend_main_rationale_1",
+      "backend_main_rationale_51",
+      "backend_routes_concept_routes",
+      "backend_routes_concept_routes_extract_concepts",
+      "backend_routes_concept_routes_py_post",
+      "backend_routes_concept_routes_rationale_1",
+      "backend_routes_concept_routes_rationale_15",
+      "backend_routes_evaluation_routes",
+      "backend_routes_evaluation_routes_evaluate_answers",
+      "backend_routes_evaluation_routes_py_post",
+      "backend_routes_evaluation_routes_rationale_1",
+      "backend_routes_evaluation_routes_rationale_15",
+      "backend_routes_feedback_routes",
+      "backend_routes_feedback_routes_generate_feedback",
+      "backend_routes_feedback_routes_py_post",
+      "backend_routes_feedback_routes_rationale_1",
+      "backend_routes_feedback_routes_rationale_15",
+      "backend_routes_ocr_routes",
+      "backend_routes_ocr_routes_process_ocr",
+      "backend_routes_ocr_routes_py_post",
+      "backend_routes_ocr_routes_rationale_1",
+      "backend_routes_ocr_routes_rationale_15",
+      "get"
+    ],
+    "3": [
+      "src_components_examdetailview",
+      "src_components_examdetailview_examdetailview",
+      "src_components_examsview",
+      "src_components_examsview_examsview",
+      "src_components_exportview",
+      "src_components_exportview_exportmodal",
+      "src_components_ocrreviewview",
+      "src_components_ocrreviewview_ocrreviewview",
+      "src_components_reviewapproveview",
+      "src_components_reviewapproveview_reviewapproveview",
+      "src_data_mockdata",
+      "src_data_mockdata_examquestions",
+      "src_data_mockdata_getconfidenceclass",
+      "src_data_mockdata_getconfidencelabel",
+      "src_data_mockdata_getstatuscolor",
+      "src_data_mockdata_mockauditevents",
+      "src_data_mockdata_mockstudentsubmissions",
+      "src_data_mockdata_mockuser"
+    ],
+    "4": [
+      "src_context_appcontext",
+      "src_context_appcontext_appcontext",
+      "src_context_appcontext_appprovider",
+      "src_context_appcontext_appprovider_initsession",
+      "src_data_mockdata_mockexams",
+      "src_lib_api",
+      "src_lib_api_createexamindb",
+      "src_lib_api_fetchteacherexams",
+      "src_lib_api_saveevaluationdb",
+      "src_lib_api_savestudentanswerocr",
+      "src_lib_api_updateteacherprofile",
+      "src_lib_api_uploadanswersheetdb",
+      "src_lib_supabaseclient",
+      "src_lib_supabaseclient_supabase",
+      "src_main"
+    ],
+    "5": [
+      "package_devdependencies",
+      "package_devdependencies_autoprefixer",
+      "package_devdependencies_postcss",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react"
+    ],
+    "6": [
+      "agents_concept_agent_concept_extractor",
+      "agents_concept_agent_concept_extractor_rationale_1"
+    ],
+    "7": [
+      "agents_concept_agent_init",
+      "agents_concept_agent_init_rationale_1"
+    ],
+    "8": [
+      "agents_concept_agent_knowledge_base",
+      "agents_concept_agent_knowledge_base_rationale_1"
+    ],
+    "9": [
+      "agents_evaluation_agent_concept_matcher",
+      "agents_evaluation_agent_concept_matcher_rationale_1"
+    ],
+    "10": [
+      "agents_evaluation_agent_confidence",
+      "agents_evaluation_agent_confidence_rationale_1"
+    ],
+    "11": [
+      "agents_evaluation_agent_init",
+      "agents_evaluation_agent_init_rationale_1"
+    ],
+    "12": [
+      "agents_evaluation_agent_scorer",
+      "agents_evaluation_agent_scorer_rationale_1"
+    ],
+    "13": [
+      "agents_evaluation_agent_semantic_matcher",
+      "agents_evaluation_agent_semantic_matcher_rationale_1"
+    ],
+    "14": [
+      "agents_feedback_agent_feedback_generator",
+      "agents_feedback_agent_feedback_generator_rationale_1"
+    ],
+    "15": [
+      "agents_feedback_agent_init",
+      "agents_feedback_agent_init_rationale_1"
+    ],
+    "16": [
+      "agents_ocr_agent_init",
+      "agents_ocr_agent_init_rationale_1"
+    ],
+    "17": [
+      "agents_ocr_agent_ocr",
+      "agents_ocr_agent_ocr_rationale_1"
+    ],
+    "18": [
+      "agents_ocr_agent_preprocessing",
+      "agents_ocr_agent_preprocessing_rationale_1"
+    ],
+    "19": [
+      "agents_ocr_agent_segmentation",
+      "agents_ocr_agent_segmentation_rationale_1"
+    ],
+    "20": [
+      "backend_config_supabase_client",
+      "backend_config_supabase_client_rationale_1"
+    ],
+    "21": [
+      "backend_routes_init",
+      "backend_routes_init_rationale_1"
+    ],
+    "22": [
+      "start",
+      "start_sh__entry"
+    ],
+    "23": [
+      "stop",
+      "stop_sh__entry"
+    ],
+    "24": [
+      "tailwind_config",
+      "tailwindcss"
+    ],
+    "25": [
+      "postcss_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.1310483870967742,
+    "1": 0.08,
+    "2": 0.08,
+    "3": 0.24183006535947713,
+    "4": 0.3047619047619048,
+    "5": 0.25,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0
+  },
+  "gods": [
+    {
+      "id": "src_context_appcontext_useapp",
+      "label": "useApp()",
+      "degree": 32
+    },
+    {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 13
+    },
+    {
+      "id": "src_data_mockdata_getconfidenceclass",
+      "label": "getConfidenceClass()",
+      "degree": 9
+    },
+    {
+      "id": "src_context_appcontext_appprovider",
+      "label": "AppProvider()",
+      "degree": 9
+    },
+    {
+      "id": "src_data_mockdata_getstatuscolor",
+      "label": "getStatusColor()",
+      "degree": 7
+    },
+    {
+      "id": "src_components_examsview_examsview",
+      "label": "ExamsView()",
+      "degree": 6
+    },
+    {
+      "id": "src_data_mockdata_getconfidencelabel",
+      "label": "getConfidenceLabel()",
+      "degree": 6
+    },
+    {
+      "id": "src_components_examdetailview_examdetailview",
+      "label": "ExamDetailView()",
+      "degree": 5
+    },
+    {
+      "id": "src_components_reviewapproveview_reviewapproveview",
+      "label": "ReviewApproveView()",
+      "degree": 5
+    },
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 5
+    }
+  ],
+  "surprises": [
+    {
+      "source": "AppShell()",
+      "target": "useApp()",
+      "source_files": [
+        "src/App.jsx",
+        "src/context/AppContext.jsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "peripheral node `AppShell()` unexpectedly reaches hub `useApp()`"
+    },
+    {
+      "source": "DashboardView()",
+      "target": "getStatusColor()",
+      "source_files": [
+        "src/components/DashboardView.jsx",
+        "src/data/mockData.js"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "ExamDetailView()",
+      "target": "useApp()",
+      "source_files": [
+        "src/components/ExamDetailView.jsx",
+        "src/context/AppContext.jsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "ExamsView()",
+      "target": "useApp()",
+      "source_files": [
+        "src/components/ExamsView.jsx",
+        "src/context/AppContext.jsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "ExportModal()",
+      "target": "useApp()",
+      "source_files": [
+        "src/components/ExportView.jsx",
+        "src/context/AppContext.jsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `react` connect `App.jsx` to `package.json`, `mockData.js`, `AppContext.jsx`?",
+      "why": "High betweenness centrality (0.160) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `devDependencies` connect `devDependencies` to `package.json`?",
+      "why": "High betweenness centrality (0.050) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `useApp()` connect `App.jsx` to `mockData.js`, `AppContext.jsx`?",
+      "why": "High betweenness centrality (0.039) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `ACTOR_CONFIG`, `SEVERITY_CONFIG`, `GRADES` to the rest of the system?",
+      "why": "38 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `App.jsx` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.1310483870967742 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `package.json` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.08 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `main.py` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.08 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

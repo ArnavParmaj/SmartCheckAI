@@ -117,7 +117,7 @@ export default function ReviewApproveView() {
               {/* Question header */}
               <div className="flex items-center justify-between px-5 py-3 bg-surface-bright border-b border-outline-variant">
                 <div className="flex items-center gap-2">
-                  <span className="text-label-sm font-bold text-primary bg-primary-fixed px-2 py-0.5 rounded-full">Q{index + 1}</span>
+                  <span className="text-label-sm font-bold text-primary bg-primary-fixed px-2.5 py-0.5 rounded-full">{ans.questionLabel || `Q${index + 1}`}</span>
                   <span className="text-body-sm text-on-surface-variant">{ans.questionText}</span>
                 </div>
                 <span className="text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full flex-shrink-0">
