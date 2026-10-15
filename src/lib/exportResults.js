@@ -114,7 +114,7 @@ export function openPrintReport(exam, gradebook) {
   th { background: #f2f2f2; }
 </style></head><body>
 <h1>${escapeHtml(exam.title)}</h1>
-<p>${escapeHtml(exam.subject || '')} · ${gradebook.rows.length} student(s) · exported ${new Date().toLocaleString()}</p>
+<p>${escapeHtml([exam.subject, exam.semester].filter(Boolean).join(' · '))} · ${gradebook.rows.length} student(s) · exported ${new Date().toLocaleString()}</p>
 <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
 </body></html>`);
   win.document.close();
@@ -144,7 +144,7 @@ function studentReportHtml(exam, sub) {
   return `
     <article class="report">
       <h1>${escapeHtml(exam.title)}</h1>
-      <p class="meta">${escapeHtml(sub.studentName)} · Roll ${escapeHtml(sub.rollNumber)} · ${escapeHtml(exam.subject || '')}</p>
+      <p class="meta">${escapeHtml(sub.studentName)} · Roll ${escapeHtml(sub.rollNumber)} · ${escapeHtml([exam.subject, exam.semester].filter(Boolean).join(' · '))}</p>
       <p class="total">Total: <strong>${escapeHtml(sub.totalScore)}/${escapeHtml(sub.maxScore)}</strong> (${escapeHtml(sub.percentage)}%) · ${escapeHtml(sub.status)}</p>
       ${rows}
     </article>`;

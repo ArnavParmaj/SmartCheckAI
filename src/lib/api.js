@@ -28,7 +28,7 @@ export async function fetchTeacherExams(teacherId, isDemo = false) {
       id: e.id,
       title: e.title,
       subject: e.subject || 'General',
-      grade: e.grade || 'Grade 10',
+      semester: e.semester || '',
       dateCreated: e.exam_date || (e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
       status: e.status ? (e.status.charAt(0).toUpperCase() + e.status.slice(1)) : 'Draft',
       totalStudents: e.total_students || 0,
@@ -48,6 +48,7 @@ export async function fetchTeacherExams(teacherId, isDemo = false) {
           modelAnswer: q.answer_keys?.[0]?.model_answer || '',
           criteria: q.answer_keys?.[0]?.rubric_criteria?.criteria || [],
           concepts: q.answer_keys?.[0]?.rubric_criteria?.concepts || [],
+          rules: q.answer_keys?.[0]?.rubric_criteria?.rules || [],
         }))
     }));
   } catch (err) {
@@ -141,19 +142,20 @@ export async function fetchTeacherSubmissions(exams) {
 export async function createExamInDB(examData, teacherId) {
   const newExamId = crypto.randomUUID();
   try {
-    const { error: examError } = await supabase
-      .from('exams')
-      .insert({
-        id: newExamId,
-        teacher_id: teacherId,
-        title: examData.title,
-        subject: examData.subject,
-        total_marks: Number(examData.maxScore) || 100,
-        exam_date: examData.dateCreated || new Date().toISOString().split('T')[0],
-        status: 'draft'
-      })
-      .select()
-      .single();
+    const examRow = {
+      id: newExamId,
+      teacher_id: teacherId,
+      title: examData.title,
+      subject: examData.subject,
+      total_marks: Number(examData.maxScore) || 100,
+      exam_date: examData.dateCreated || new Date().toISOString().split('T')[0],
+      status: 'draft'
+    };
+    let { error: examError } = await supabase.from('exams').insert({ ...examRow, semester: examData.semester || null });
+    // PGRST204: semester column missing (migration 005 not applied yet) - save without it
+    if (examError?.code === 'PGRST204') {
+      ({ error: examError } = await supabase.from('exams').insert(examRow));
+    }
 
     if (examError) {
       console.error('DB Insert Exam Error:', examError.message);
@@ -196,7 +198,7 @@ export async function createExamInDB(examData, teacherId) {
           const keyRow = { question_id: questionId, model_answer: q.modelAnswer || '' };
           let { error: keyErr } = await supabase.from('answer_keys').insert({
             ...keyRow,
-            rubric_criteria: { criteria: q.criteria || [], concepts: q.concepts || [] }
+            rubric_criteria: { criteria: q.criteria || [], concepts: q.concepts || [], rules: (q.rules || []).filter(r => r.trim()) }
           });
           // PGRST204: rubric_criteria column missing (migration 004 not applied yet);
           // keep the model answer, criteria are rebuilt from it at grading time

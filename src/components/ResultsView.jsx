@@ -25,7 +25,7 @@ export default function ResultsView() {
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <h3 className="text-label-md font-bold text-on-surface">{exam.title}</h3>
-              <p className="text-body-sm text-on-surface-variant">{exam.subject} · {exam.grade}</p>
+              <p className="text-body-sm text-on-surface-variant">{[exam.subject, exam.semester].filter(Boolean).join(' · ')}</p>
             </div>
             <button onClick={() => navigate('exam-detail', { exam })} className="btn-outline text-xs">Details</button>
           </div>

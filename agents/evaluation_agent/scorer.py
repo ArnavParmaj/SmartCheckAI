@@ -5,9 +5,9 @@ pipeline (no external API) checks:
   - concept coverage: the criterion's key concepts (from the faculty answer key)
     found in the student answer, literally or by meaning
   - semantic similarity between the criterion and the closest part of the answer
-and awards that criterion's marks in 0.5 steps, with a reason. If GEMINI_API_KEY is
-set, Gemini grades the same criteria as a second opinion and each criterion's mark is
-the average of both. Disagreement between signals sends the answer to faculty review.
+and awards that criterion's marks in 0.5 steps, with a reason. If a cloud model is
+available (agents/llm.py: Groq, then Gemini), it grades the same criteria as a second
+opinion and each criterion's mark is the average of both. Disagreement between signals sends the answer to faculty review.
 """
 
 import json
@@ -20,7 +20,7 @@ from agents.evaluation_agent.concept_matcher import match_concepts
 from agents.evaluation_agent.confidence import combine
 from agents.evaluation_agent.semantic_matcher import best_chunk_similarity, similarity
 from agents.feedback_agent.feedback_generator import template_feedback
-from agents.ocr_agent.gemini_ocr import GEMINI_TEXT_MODEL, _call_gemini_vision, is_gemini_available
+from agents.llm import call_llm, llm_available
 
 logger = logging.getLogger("scorer")
 
@@ -29,10 +29,16 @@ logger = logging.getLogger("scorer")
 SIM_FLOOR, SIM_CEIL = 0.2, 0.85
 COVERAGE_WEIGHT = 0.6  # criterion score = 60% concept coverage + 40% similarity
 MET, PARTIAL = 0.8, 0.3  # fraction of a criterion's marks for "met" / "partly met"
+MARK_STEP = 0.25  # marks are awarded in quarter steps, as rubrics with 1.25 / 0.75-mark criteria need
+LLM_WEIGHT = 0.5  # share of the cloud model's mark in each criterion's final mark when it is available
 
 
-def _round_half(x: float) -> float:
-    return round(x * 2) / 2
+def _round_marks(x: float) -> float:
+    return round(x / MARK_STEP) * MARK_STEP
+
+
+def _rules_block(rules: Optional[List[str]]) -> str:
+    return ("Marking rules and deductions (apply them):\n" + "\n".join(f"  - {x}" for x in rules) + "\n") if rules else ""
 
 
 def _scaled(sim: float) -> float:
@@ -83,7 +89,7 @@ def _grade_criterion_locally(crit: Dict[str, Any], student_answer: str, model_an
         "criterion": crit["criterion"],
         "marks": crit["marks"],
         "fraction": fraction,
-        "marks_awarded": _round_half(fraction * crit["marks"]),
+        "marks_awarded": _round_marks(fraction * crit["marks"]),
         "status": status,
         "reason": _local_reason(status, match, crit["criterion"]),
         "concepts_covered": match["covered"],
@@ -92,31 +98,34 @@ def _grade_criterion_locally(crit: Dict[str, Any], student_answer: str, model_an
     }
 
 
-def _gemini_grade(question_text: str, model_answer: str, criteria: List[Dict[str, Any]], student_answer: str) -> Optional[Dict[str, Any]]:
+def _gemini_grade(question_text: str, model_answer: str, criteria: List[Dict[str, Any]], student_answer: str, rules: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """Second-opinion grade per criterion from Gemini, or None if unavailable / failed."""
-    if not is_gemini_available(GEMINI_TEXT_MODEL):
+    if not llm_available("text"):
         return None
     rubric = "\n".join(f"- {c['criterion']} ({c['marks']} marks): {c.get('description', '')}" for c in criteria)
     prompt = f"""You are a strict but fair examiner. Grade the student's answer against the faculty
-model answer, criterion by criterion. Award marks in steps of 0.5, never above a criterion's marks.
+model answer, criterion by criterion. Award marks in steps of 0.25, never above a criterion's marks.
+Follow each criterion's partial-credit rule. A point only named, not explained, earns at most half.
 Judge meaning, not wording or spelling (the answer was transcribed from handwriting).
+If the answer states a misconception listed in the rules, give the deduction (total, in marks).
 
 Question: {question_text}
 Faculty model answer: {model_answer}
 Criteria:
 {rubric}
-Student answer: {student_answer}
+{_rules_block(rules)}Student answer: {student_answer}
 
 Respond ONLY with valid JSON:
 {{"criteria": [{{"criterion": "<name as given>", "marks": <number>, "reason": "<one sentence>"}}],
+  "deduction": <number, 0 if none>, "deduction_reason": "<misconception found, or empty>",
   "feedback": "<1-2 sentences to the student on how to improve>"}}"""
-    raw = _call_gemini_vision([], prompt, timeout=60, model=GEMINI_TEXT_MODEL)
+    raw, _engine = call_llm(prompt, task="text", timeout=60)
     if not raw:
         return None
     try:
         parsed = json.loads(raw)
         crit = _parse_criteria_grades(parsed.get("criteria", []), criteria)
-        return {"criteria": crit, "feedback": parsed.get("feedback", "")} if crit else None
+        return _with_deduction(parsed, {"criteria": crit, "feedback": parsed.get("feedback", "")}) if crit else None
     except Exception as e:
         logger.error(f"Failed to parse Gemini grade JSON: {e}")
         return None
@@ -124,14 +133,28 @@ Respond ONLY with valid JSON:
 
 def _parse_criteria_grades(items: List[Dict[str, Any]], criteria: List[Dict[str, Any]]) -> Optional[List[Dict[str, Any]]]:
     """Match Gemini's per-criterion grades to our criteria (by name, else by position)."""
+    items = [c for c in (items or []) if isinstance(c, dict)]
     by_name = {str(c.get("criterion", "")).strip().lower(): c for c in items}
     out = []
     for i, crit in enumerate(criteria):
         g = by_name.get(crit["criterion"].strip().lower()) or (items[i] if i < len(items) else None)
         if g is None:
             return None
-        out.append({"marks": max(0.0, min(crit["marks"], float(g.get("marks", 0)))), "reason": g.get("reason", "")})
+        try:
+            marks = float(g.get("marks", 0))
+        except (TypeError, ValueError):
+            return None
+        out.append({"marks": max(0.0, min(crit["marks"], marks)), "reason": str(g.get("reason", ""))})
     return out
+
+
+def _with_deduction(parsed: Dict[str, Any], result: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        result["deduction"] = max(0.0, min(2.0, float(parsed.get("deduction") or 0)))
+    except (TypeError, ValueError):
+        result["deduction"] = 0.0
+    result["deduction_reason"] = str(parsed.get("deduction_reason") or "") if result["deduction"] else ""
+    return result
 
 
 def gemini_grade_batch(answers: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
@@ -141,7 +164,7 @@ def gemini_grade_batch(answers: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any
     Returns {question_id: {"criteria": [...], "feedback": str}}; {} if unavailable.
     """
     todo = [a for a in answers if a["student_answer"].strip() and a["criteria"]]
-    if not todo or not is_gemini_available(GEMINI_TEXT_MODEL):
+    if not todo or not llm_available("text"):
         return {}
     blocks = []
     for a in todo:
@@ -151,18 +174,21 @@ Question: {a['question_text']}
 Faculty model answer: {a['model_answer']}
 Criteria:
 {rubric}
-Student answer: {a['student_answer']}""")
+{_rules_block(a.get('rules'))}Student answer: {a['student_answer']}""")
     prompt = f"""You are a strict but fair examiner. Grade each student answer below against the faculty
-model answer, criterion by criterion. Award marks in steps of 0.5, never above a criterion's marks.
+model answer, criterion by criterion. Award marks in steps of 0.25, never above a criterion's marks.
+Follow each criterion's partial-credit rule. A point only named, not explained, earns at most half.
 Judge meaning, not wording or spelling (answers were transcribed from handwriting).
+If an answer states a misconception listed in its rules, give that deduction (total, in marks).
 
 {chr(10).join(blocks)}
 
 Respond ONLY with valid JSON:
 {{"answers": {{"<question id as given after ###>": {{
    "criteria": [{{"criterion": "<name as given>", "marks": <number>, "reason": "<one sentence>"}}],
+   "deduction": <number, 0 if none>, "deduction_reason": "<misconception found, or empty>",
    "feedback": "<1-2 sentences to the student on how to improve>"}}}}}}"""
-    raw = _call_gemini_vision([], prompt, timeout=120, model=GEMINI_TEXT_MODEL)
+    raw, _engine = call_llm(prompt, task="text", timeout=120)
     if not raw:
         return {}
     try:
@@ -171,16 +197,19 @@ Respond ONLY with valid JSON:
         logger.error(f"Failed to parse Gemini batch grade JSON: {e}")
         return {}
     out = {}
+    if not isinstance(graded, dict):
+        return {}
     for a in todo:
         g = graded.get(a["question_id"])
+        # A malformed second opinion for one answer just leaves it to local grading
         crit = _parse_criteria_grades(g.get("criteria", []), a["criteria"]) if isinstance(g, dict) else None
         if crit:
-            out[a["question_id"]] = {"criteria": crit, "feedback": g.get("feedback", "")}
+            out[a["question_id"]] = _with_deduction(g, {"criteria": crit, "feedback": g.get("feedback", "")})
     return out
 
 
 def _summary(results: List[Dict[str, Any]], total: float, max_marks: float) -> str:
-    if total >= max_marks:
+    if total >= max_marks and all(r["marks_awarded"] >= r["marks"] for r in results):
         return f"Full marks ({total:g}/{max_marks:g}): every criterion was met."
     lost = [r for r in results if r["marks_awarded"] < r["marks"]]
     strong = [r["criterion"] for r in results if r["status"] == "met"]
@@ -210,6 +239,7 @@ def grade_answer(
     use_gemini: bool = True,
     criteria: Optional[List[Dict[str, Any]]] = None,
     gemini_result: Optional[Dict[str, Any]] = None,
+    rules: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     criteria: knowledge-base criteria [{criterion, description, marks, concepts}].
@@ -258,10 +288,10 @@ def grade_answer(
     # Optional Gemini second opinion, averaged per criterion
     gemini = gemini_result
     if gemini is None and use_gemini:
-        gemini = _gemini_grade(question_text, model_answer, criteria, student_answer)
+        gemini = _gemini_grade(question_text, model_answer, criteria, student_answer, rules)
     if gemini:
         for r, g in zip(results, gemini["criteria"]):
-            r["marks_awarded"] = _round_half((r["marks_awarded"] + g["marks"]) / 2)
+            r["marks_awarded"] = _round_marks((1 - LLM_WEIGHT) * r["marks_awarded"] + LLM_WEIGHT * g["marks"])
             r["status"] = _status(r["marks_awarded"] / r["marks"])
             r["local_check"] = r["reason"]
             if g["reason"]:
@@ -271,6 +301,9 @@ def grade_answer(
         engine = "hybrid"
 
     total = min(max_marks, sum(r["marks_awarded"] for r in results))
+    # Misconception deductions (rubric rules) come from the cloud model; local models can't spot them
+    deduction = min(total, gemini.get("deduction", 0.0)) if gemini else 0.0
+    total = _round_marks(total - deduction)
     confidence, needs_review = combine(ocr_confidence, signals)
     for r in results:
         r.pop("fraction", None)
@@ -280,7 +313,11 @@ def grade_answer(
         "max_marks": max_marks,
         "confidence": confidence,
         "needs_review": needs_review,
-        "rationale": _summary(results, total, max_marks),
+        "rationale": _summary(results, total, max_marks) + (
+            f" Deducted {deduction:g}: {gemini.get('deduction_reason', '').rstrip('.')}." if deduction else ""
+        ),
+        "deduction": deduction,
+        "deduction_reason": gemini.get("deduction_reason", "") if deduction else "",
         "feedback": feedback,
         "criteria": results,
         "concepts_covered": covered,

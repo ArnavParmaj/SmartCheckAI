@@ -1,0 +1,16 @@
+set,student,file,Q1(a),Q2(a),Q3(a),Q4(a),total,notes
+2,Aarav Kulkarni,Set2_Student1_21CE1042_Aarav_Kulkarni.pdf,5,5,5,5,20,complete model-level answers
+2,Sneha Patil,Set2_Student2_21CE1077_Sneha_Patil.pdf,4,4,3.5,3.5,15,Q1 no significance; Q2 fault tolerance only named; Q3 misses 'NN stores no data' and DN replication; Q4 no balanced judgement
+2,Rohan Deshmukh,Set2_Student3_21CE1019_Rohan_Deshmukh.pdf,2,2.25,2.5,2.25,9,Vs explained without examples; features mostly named only
+2,Kunal Shinde,Set2_Student4_21CE1058_Kunal_Shinde.pdf,1.5,0.5,0.5,0.75,3.25,Value replaces Velocity; Q2 only NN/DN + 'fast and secure'; Q3 roles swapped; Q4 'NoSQL dont use SQL' misconception (-0.5)
+2,Vikas More,Set2_Student5_21CE1093_Vikas_More.pdf,1.25,0,0.25,0,1.5,Q2 'HDFS is a database ... tables' misconception; Q4 not attempted
+3,Priya Joshi,Set3_Student1_21CE2011_Priya_Joshi.pdf,5,5,5,5,20,complete model-level answers
+3,Aditya Sawant,Set3_Student2_21CE2034_Aditya_Sawant.pdf,3.5,4,3,3.5,14,Q3 no shuffle & sort; Q4 column-family not described
+3,Meera Iyer,Set3_Student3_21CE2050_Meera_Iyer.pdf,2.5,1.5,1.75,2,7.75,one-word meanings; Q4 type + example only
+3,Saurabh Pawar,Set3_Student4_21CE2066_Saurabh_Pawar.pdf,1.75,0.75,0.25,0.5,3.25,Visualization replaces Veracity; reducer 'reduces size for storage' misconception (-0.5); SQL listed as NoSQL type (-0.5)
+3,Nikhil Gaikwad,Set3_Student5_21CE2081_Nikhil_Gaikwad.pdf,1,0.5,0.25,0,1.75,names only; 'vision' wrong V; Q4 not attempted
+4,Ananya Rao,Set4_Student1_21CE3007_Ananya_Rao.pdf,5,5,5,5,20,complete model-level answers
+4,Harsh Mehta,Set4_Student2_21CE3029_Harsh_Mehta.pdf,3.75,3.5,3.25,3.5,14,Q1 no mitigation; Q2 no schema point; Q3 no example; Q4 thin explanations
+4,Tanvi Kadam,Set4_Student3_21CE3045_Tanvi_Kadam.pdf,2.5,2,2,1.5,8,challenges named not explained; Q4 company names instead of domains
+4,Omkar Jadhav,Set4_Student4_21CE3062_Omkar_Jadhav.pdf,2.25,0.5,2,1.75,6.5,Q2 'old and slow vs new and fast' (0 per rubric); Q4 domains without explanation
+4,Rahul Chavan,Set4_Student5_21CE3088_Rahul_Chavan.pdf,0,0,0,0.25,0.25,Q2 'computer vs cloud' misconception; Q3 not attempted

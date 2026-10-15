@@ -46,9 +46,11 @@ export function AppProvider({ children }) {
           setIsDemo(false);
 
           // Fetch exams from real Supabase DB
+          // Load exams and their graded sheets together so screens never show an exam without its sheets
           const liveExams = await fetchTeacherExams(u.id, false);
+          const liveSubmissions = await fetchTeacherSubmissions(liveExams);
           setExams(liveExams);
-          setSubmissions(await fetchTeacherSubmissions(liveExams));
+          setSubmissions(liveSubmissions);
           setAuditEvents(await fetchAuditEvents(u.id));
         }
       } catch (err) {
@@ -73,9 +75,11 @@ export function AppProvider({ children }) {
         setUser(u);
         setIsAuthenticated(true);
         setIsDemo(false);
+        // Load exams and their graded sheets together so screens never show an exam without its sheets
         const liveExams = await fetchTeacherExams(u.id, false);
+        const liveSubmissions = await fetchTeacherSubmissions(liveExams);
         setExams(liveExams);
-        setSubmissions(await fetchTeacherSubmissions(liveExams));
+        setSubmissions(liveSubmissions);
         setAuditEvents(await fetchAuditEvents(u.id));
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
@@ -110,9 +114,11 @@ export function AppProvider({ children }) {
       setIsAuthenticated(true);
       setIsDemo(false);
 
+      // Load exams and their graded sheets together so screens never show an exam without its sheets
       const liveExams = await fetchTeacherExams(u.id, false);
+      const liveSubmissions = await fetchTeacherSubmissions(liveExams);
       setExams(liveExams);
-      setSubmissions(await fetchTeacherSubmissions(liveExams));
+      setSubmissions(liveSubmissions);
       setAuditEvents(await fetchAuditEvents(u.id));
       showNotification('Signed in with Supabase Auth!', 'success');
       return { success: true };

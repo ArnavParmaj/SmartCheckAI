@@ -1,0 +1,44 @@
+Set 2: 4 questions via groq:openai/gpt-oss-120b: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 2: 15 rubric rows via groq:openai/gpt-oss-120b
+Set 2: answer key split via rules; missing []
+   Q1(a): 5 rubric criteria -> [('Definition of Big Data', 1.0, 4), ('Volume + example', 1.0, 2), ('Velocity + example', 1.0, 2), ('Variety + example', 1.0, 2), ('Significance', 1.0, 3)]
+   Q2(a): 3 rubric criteria -> [('Definition of HDFS', 1.0, 6), ('Major features (any 4)', 3.0, 6), ('Advantages / suitability', 1.0, 6)]
+   Q3(a): 3 rubric criteria -> [('NameNode role', 2.0, 6), ('DataNode role', 2.0, 7), ('Interaction / architecture', 1.0, 2)]
+   Q4(a): 4 rubric criteria -> [('Definition of NoSQL', 1.0, 3), ('Key features (any 4)', 2.0, 2), ('Advantages over RDBMS (any 3)', 1.5, 5), ('Balanced judgement', 0.5, 3)]
+   Set2_Student1_21CE1042_Aarav_Kulkarni.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=5.0(hybrid), Q2(a)=5.0(hybrid), Q3(a)=5.0(hybrid), Q4(a)=5.0(hybrid) | 53.8s
+   Set2_Student2_21CE1077_Sneha_Patil.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=4.0*(hybrid), Q2(a)=4.5(hybrid), Q3(a)=3.5(hybrid), Q4(a)=3.5*(hybrid) | 45.9s
+   Set2_Student3_21CE1019_Rohan_Deshmukh.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.5*(hybrid), Q2(a)=3.0*(hybrid), Q3(a)=2.5*(hybrid), Q4(a)=2.0*(hybrid) | 21.2s
+   Set2_Student4_21CE1058_Kunal_Shinde.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.0*(hybrid), Q2(a)=0.5*(hybrid), Q3(a)=1.5*(hybrid), Q4(a)=2.0*(hybrid) | 24.4s
+   Set2_Student5_21CE1093_Vikas_More.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=1.5*(hybrid), Q2(a)=0.0*(hybrid), Q3(a)=1.5*(hybrid), Q4(a)=0.0(local) | 17.7s
+Set 3: 4 questions via groq:openai/gpt-oss-120b: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 3: 19 rubric rows via groq:openai/gpt-oss-120b
+Set 3: answer key split via rules; missing []
+   Q1(a): 5 rubric criteria -> [('Volume', 1.0, 3), ('Velocity', 1.0, 3), ('Variety', 1.0, 2), ('Veracity', 1.0, 2), ('Value', 1.0, 3)]
+   Q2(a): 5 rubric criteria -> [('Full form + purpose', 1.0, 1), ('ResourceManager', 1.0, 3), ('NodeManager', 1.0, 2), ('ApplicationMaster', 1.0, 3), ('Benefits', 1.0, 3)]
+   Q3(a): 5 rubric criteria -> [('Definition', 1.0, 2), ('Mapper role', 1.25, 2), ('Shuffle & sort', 0.75, 2), ('Reducer role', 1.25, 2), ('Example', 0.75, 1)]
+   Q4(a): 4 rubric criteria -> [('Key‑value store', 1.25, 2), ('Document database', 1.25, 2), ('Column‑family database', 1.25, 3), ('Graph database', 1.25, 2)]
+   Set3_Student1_21CE2011_Priya_Joshi.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=5.0(hybrid), Q2(a)=5.0(hybrid), Q3(a)=4.0(hybrid), Q4(a)=4.0(hybrid) | 32.2s
+   Set3_Student2_21CE2034_Aditya_Sawant.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=5.0*(hybrid), Q2(a)=5.0(hybrid), Q3(a)=3.5*(hybrid), Q4(a)=4.0*(hybrid) | 43.0s
+   Set3_Student3_21CE2050_Meera_Iyer.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=4.5*(hybrid), Q2(a)=4.0*(hybrid), Q3(a)=2.5*(hybrid), Q4(a)=2.5(hybrid) | 20.2s
+   Set3_Student4_21CE2066_Saurabh_Pawar.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.5*(hybrid), Q2(a)=3.0*(hybrid), Q3(a)=2.5*(hybrid), Q4(a)=3.0*(hybrid) | 29.5s
+   Set3_Student5_21CE2081_Nikhil_Gaikwad.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.5*(hybrid), Q2(a)=1.0*(hybrid), Q3(a)=1.5*(hybrid), Q4(a)=0.0(local) | 25.2s
+Set 4: 4 questions via gemini:gemini-flash-lite-latest: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 4: 13 rubric rows via gemini:gemini-flash-lite-latest
+Set 4: answer key split via rules; missing []
+   Q1(a): 2 rubric criteria -> [('Challenges (any 5)', 4.5, 7), ('Mitigation', 0.5, 8)]
+   Q2(a): 5 rubric criteria -> [('Data type / format', 1.0, 2), ('Architecture', 1.0, 5), ('Schema & scaling', 1.0, 2), ('Volume / velocity', 1.0, 2), ('Use cases & conclusion', 1.0, 3)]
+   Q3(a): 5 rubric criteria -> [('Input splitting', 1.0, 2), ('Map phase', 1.0, 6), ('Shuffle & sort', 1.0, 2), ('Reduce phase & output', 1.0, 1), ('Example', 1.0, 1)]
+   Q4(a): 1 rubric criteria -> [('Applications (any 5)', 5.0, 8)]
+   Set4_Student1_21CE3007_Ananya_Rao.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=5.0(hybrid), Q2(a)=5.0(hybrid), Q3(a)=5.0(hybrid), Q4(a)=5.0(hybrid) | 55.4s
+   Set4_Student2_21CE3029_Harsh_Mehta.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=4.0(hybrid), Q2(a)=3.5*(hybrid), Q3(a)=4.5(hybrid), Q4(a)=3.0*(hybrid) | 41.6s
+   Set4_Student3_21CE3045_Tanvi_Kadam.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.5*(hybrid), Q2(a)=2.0*(hybrid), Q3(a)=2.0*(hybrid), Q4(a)=2.5*(hybrid) | 24.0s
+   Set4_Student4_21CE3062_Omkar_Jadhav.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=2.0*(hybrid), Q2(a)=0.0*(hybrid), Q3(a)=2.0(hybrid), Q4(a)=2.0(hybrid) | 22.1s
+   Set4_Student5_21CE3088_Rahul_Chavan.pdf: OCR groq:qwen/qwen3.8-27b | Q1(a)=1.0*(hybrid), Q2(a)=0.5*(hybrid), Q3(a)=0.0(local), Q4(a)=1.0*(hybrid) | 21.5s
+
+Answers compared: 60
+Mean absolute error: 0.58 marks (of 5)
+Within ±0.5: 65%   Within ±1: 82%
+Bias (AI − reference): +0.46
+Errors > 1 mark: 11, of which flagged for review: 10
+
+Wrote eval/results_baseline/raw.json, comparison.csv, log.txt

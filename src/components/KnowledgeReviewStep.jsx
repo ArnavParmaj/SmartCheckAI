@@ -18,6 +18,7 @@ export default function KnowledgeReviewStep({ questions, setQuestions, showNotif
         max_marks: Number(q.maxMarks) || 5,
         model_answer: q.modelAnswer || '',
         criteria: (q.criteria || []).map(c => ({ criterion: c.criterion, description: c.description || '', marks: Number(c.marks) || 0 })),
+        rules: q.rules || [],
       });
       const k = res.knowledge;
       update(q.id, { criteria: k.criteria, concepts: k.concepts });
@@ -84,6 +85,18 @@ export default function KnowledgeReviewStep({ questions, setQuestions, showNotif
               maxMarks={q.maxMarks}
               onChange={criteria => update(q.id, { criteria })}
               showPoints
+            />
+
+            <label className="text-label-md text-on-surface block mt-3 mb-1" htmlFor={`rules-${q.id}`}>
+              Deductions &amp; marking rules <span className="text-xs text-on-surface-variant font-normal">(one per line; applied by the AI second opinion)</span>
+            </label>
+            <textarea
+              id={`rules-${q.id}`}
+              value={(q.rules || []).join('\n')}
+              onChange={e => update(q.id, { rules: e.target.value.split('\n') })}
+              rows={Math.min(6, Math.max(2, (q.rules || []).length))}
+              placeholder="e.g. Calling HDFS a relational database: deduct 0.5"
+              className="input-field resize-y text-xs"
             />
           </div>
         ))}

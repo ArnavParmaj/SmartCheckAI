@@ -2,13 +2,28 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { processAnswerSheet } from '../lib/pipeline';
 
+// Roll numbers like 21CE1042; file names like "Set2_Student1_21CE1042_Aarav_Kulkarni.pdf"
+const ROLL_RE = /\b\d{2}[A-Z]{2,4}\d{3,5}\b/i;
+
+function guessFromFileName(fileName) {
+  const base = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+  const roll = base.match(ROLL_RE)?.[0] || '';
+  const name = base
+    .replace(ROLL_RE, ' ')
+    .replace(/\b(set|student|sheet|answer|paper)\s*\d*\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { name, roll };
+}
+
 const toFileItem = (f) => ({
   file: f,
   name: f.name,
   size: f.size,
   preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
-  studentName: f.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' '),
-  rollNumber: '',
+  studentName: guessFromFileName(f.name).name,
+  rollNumber: guessFromFileName(f.name).roll,
+  nameEdited: false, // a name/roll typed by faculty beats the one read from the booklet
   state: 'queued', // queued | running | done | failed
   stage: '',
   result: null,
@@ -139,14 +154,14 @@ export default function EvaluatePapersView() {
                     <div className="flex gap-2">
                       <input
                         value={it.studentName}
-                        onChange={e => updateItem(i, { studentName: e.target.value })}
+                        onChange={e => updateItem(i, { studentName: e.target.value, nameEdited: true })}
                         placeholder="Student name"
                         aria-label="Student name"
                         className="input-field text-sm py-1 flex-1 min-w-0"
                       />
                       <input
                         value={it.rollNumber}
-                        onChange={e => updateItem(i, { rollNumber: e.target.value })}
+                        onChange={e => updateItem(i, { rollNumber: e.target.value, nameEdited: true })}
                         placeholder="Roll no."
                         aria-label="Roll number"
                         className="input-field text-sm py-1 w-28"

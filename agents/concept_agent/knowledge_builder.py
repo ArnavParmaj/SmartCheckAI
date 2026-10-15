@@ -6,7 +6,7 @@ Each key concept from the model answer is attached to the rubric criterion it be
 supports, so marks can be explained criterion by criterion. Runs locally.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from agents.concept_agent.concept_extractor import extract_key_points
 from agents.evaluation_agent.semantic_matcher import get_model
@@ -33,7 +33,7 @@ def _normalise_criteria(criteria: List[Dict[str, Any]], question_text: str, max_
     total = sum(c["marks"] for c in cleaned)
     if max_marks and abs(total - max_marks) > 0.01:
         for c in cleaned:
-            c["marks"] = round(c["marks"] * max_marks / total * 2) / 2
+            c["marks"] = round(c["marks"] * max_marks / total * 4) / 4
     return cleaned
 
 
@@ -69,8 +69,15 @@ def _assign_concepts(concepts: List[str], criteria: List[Dict[str, Any]]) -> Non
             criteria[j]["concepts"].append(concept)
 
 
-def build_knowledge(question_text: str, model_answer: str, criteria: List[Dict[str, Any]], max_marks: float) -> Dict[str, Any]:
+def build_knowledge(
+    question_text: str,
+    model_answer: str,
+    criteria: List[Dict[str, Any]],
+    max_marks: float,
+    rules: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """rules: the rubric's deduction rules and general marking guidelines for this question."""
     concepts = extract_key_points(model_answer)["concepts"] if model_answer.strip() else []
     normalised = _normalise_criteria(criteria, question_text, max_marks)
     _assign_concepts(concepts, normalised)
-    return {"model_answer": model_answer, "concepts": concepts, "criteria": normalised}
+    return {"model_answer": model_answer, "concepts": concepts, "criteria": normalised, "rules": list(rules or [])}

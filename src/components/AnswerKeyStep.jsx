@@ -20,6 +20,7 @@ export default function AnswerKeyStep({ questions, setQuestions, showNotificatio
         text: q.text,
         max_marks: Number(q.maxMarks) || 5,
         criteria: (q.criteria || []).map(c => ({ criterion: c.criterion, description: c.description || '', marks: Number(c.marks) || 0 })),
+        rules: q.rules || [],
       }));
       const res = await buildKnowledge(spec, mode === 'file' ? { file } : { text: pasted });
       if (res.status !== 'success') {
@@ -29,7 +30,7 @@ export default function AnswerKeyStep({ questions, setQuestions, showNotificatio
       setQuestions(prev => prev.map(q => {
         const k = res.knowledge?.[q.label];
         if (!k) return q;
-        return { ...q, modelAnswer: k.model_answer, criteria: k.criteria, concepts: k.concepts };
+        return { ...q, modelAnswer: k.model_answer, criteria: k.criteria, concepts: k.concepts, rules: k.rules || q.rules || [] };
       }));
       setResult(res);
       const found = questions.length - (res.missing?.length || 0);

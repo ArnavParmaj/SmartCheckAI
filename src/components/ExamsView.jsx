@@ -40,7 +40,7 @@ export default function ExamsView() {
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
                   <h3 className="text-label-md font-bold text-on-surface">{exam.title}</h3>
-                  <p className="text-body-sm text-on-surface-variant mt-0.5">{exam.subject} · {exam.grade}</p>
+                  <p className="text-body-sm text-on-surface-variant mt-0.5">{[exam.subject, exam.semester].filter(Boolean).join(' · ')}</p>
                 </div>
                 <span className={getStatusColor(exam.status)}>{exam.status}</span>
               </div>

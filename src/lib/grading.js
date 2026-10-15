@@ -27,6 +27,7 @@ export async function gradeAnswers(answers, examQuestions) {
         question_text: ans.questionText || q?.text || '',
         model_answer: q?.modelAnswer || q?.rubric || '',
         criteria: q?.criteria || [],
+        rules: (q?.rules || []).filter(r => r.trim()),
         student_answer: ans.ocrText || '',
         max_marks: Number(ans.maxMarks) || 5,
         ocr_confidence: ans.ocrConfidence ?? null,
@@ -48,6 +49,8 @@ export async function gradeAnswers(answers, examQuestions) {
       aiFeedback: r.feedback,
       conceptsMissed: r.concepts_missed || [],
       aiCriteria: r.criteria || [],
+      deduction: r.deduction || 0,
+      deductionReason: r.deduction_reason || '',
       needsReview: r.needs_review,
       gradingEngine: r.engine,
     };
@@ -69,9 +72,10 @@ export function needsFacultyReview(ans) {
 // Short name for an answer-key point: the term before ':' if there is one, else its first words
 // (mirrors concept_label in agents/concept_agent/concept_extractor.py)
 export function pointLabel(point) {
-  const [head] = String(point).split(':');
-  if (point.includes(':') && head.trim().split(/\s+/).length <= 5) return head.trim();
-  const words = String(point).split(/\s+/);
+  const text = String(point).trim().replace(/^(and|or|also|the)\s+/i, '');
+  const m = text.match(/^(.{2,60}?)\s*(?::|\u2014|\u2013|\s-\s)/);
+  if (m && m[1].trim().split(/\s+/).length <= 5) return m[1].trim();
+  const words = text.split(/\s+/);
   return words.slice(0, 6).join(' ') + (words.length > 6 ? '…' : '');
 }
 
@@ -115,6 +119,7 @@ export function examStats(exam, submissions) {
   const allApproved = subs.length > 0 && subs.every(s => s.teacherApproved);
   return {
     ...exam,
+    totalStudents: Math.max(Number(exam.totalStudents) || 0, subs.length),
     submissionsEvaluated: graded.length,
     pendingReview: subs.filter(s => !s.teacherApproved).length,
     avgScore: Math.round(graded.reduce((sum, s) => sum + s.percentage, 0) / graded.length),

@@ -152,7 +152,7 @@ export default function DashboardView() {
               <tr className="border-b border-outline-variant bg-surface-bright">
                 <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Exam Name</th>
                 <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Subject</th>
-                <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Grade</th>
+                <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Semester</th>
                 <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Date</th>
                 <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Submissions</th>
                 <th className="text-label-sm text-on-surface-variant py-3 px-5 uppercase tracking-wider font-semibold">Status</th>
@@ -173,7 +173,7 @@ export default function DashboardView() {
                     <p className="text-label-md font-semibold text-on-surface">{exam.title}</p>
                   </td>
                   <td className="py-4 px-5 text-body-sm text-on-surface-variant">{exam.subject}</td>
-                  <td className="py-4 px-5 text-body-sm text-on-surface-variant">{exam.grade}</td>
+                  <td className="py-4 px-5 text-body-sm text-on-surface-variant">{exam.semester || '—'}</td>
                   <td className="py-4 px-5 text-body-sm text-on-surface-variant">{exam.dateCreated}</td>
                   <td className="py-4 px-5">
                     <div className="flex items-center gap-2">

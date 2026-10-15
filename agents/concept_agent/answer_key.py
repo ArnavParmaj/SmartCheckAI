@@ -12,7 +12,7 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
-from agents.ocr_agent.gemini_ocr import GEMINI_TEXT_MODEL, _call_gemini_vision, is_gemini_available
+from agents.llm import call_llm, llm_available
 
 logger = logging.getLogger("answer_key")
 
@@ -86,12 +86,55 @@ def split_by_questions(text: str, labels: List[str]) -> Dict[str, str]:
         if current_label:
             sections[current_label].append(line.strip())
 
-    return {label: "\n".join(t for t in parts if t).strip() for label, parts in sections.items()}
+    return {label: _clean_answer(parts) for label, parts in sections.items()}
+
+
+# "[5 Marks]", "(10 marks)", possibly broken across lines by the PDF
+MARKS_TAG_RE = re.compile(r"[\[\(]\s*\d+(?:\.\d+)?\s*marks?\s*[\]\)]", re.IGNORECASE)
+BULLET_RE = re.compile(r"^\s*(?:[-*•]|\d+[.)]|[a-z][.)]|\([a-z0-9]+\))\s+", re.IGNORECASE)
+
+
+def _clean_answer(lines: List[str]) -> str:
+    """
+    Turn one answer's raw lines into clean model-answer text:
+    - drop the repeated question text that answer keys often put on the marker line
+      (everything up to a "[5 Marks]" tag near the start)
+    - re-join lines the PDF hard-wrapped mid-sentence, keeping bullets and paragraphs
+    """
+    text = "\n".join(l for l in lines if l is not None)
+    head = MARKS_TAG_RE.search(re.sub(r"\s*\n\s*", " ", text[:400]))
+    if head:
+        # Find the same tag position in the original text (whitespace may differ)
+        flat_index = head.end()
+        consumed, i = 0, 0
+        while i < len(text) and consumed < flat_index:
+            if text[i].isspace():
+                while i < len(text) and text[i].isspace():
+                    i += 1
+                consumed += 1
+            else:
+                i += 1
+                consumed += 1
+        text = text[i:]
+
+    paragraphs: List[str] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            if paragraphs and paragraphs[-1]:
+                paragraphs.append("")
+            continue
+        prev = paragraphs[-1] if paragraphs else ""
+        if prev and not BULLET_RE.match(line) and not prev.endswith((".", ";", "?", "!")):
+            paragraphs[-1] = f"{prev} {line}"
+        else:
+            paragraphs.append(line)
+    return "\n".join(p for p in paragraphs if p).strip()
 
 
 def gemini_split(text: str, labels: List[str]) -> Dict[str, str]:
     """Second attempt at splitting, used only when rule-based splitting misses questions."""
-    if not is_gemini_available(GEMINI_TEXT_MODEL):
+    if not llm_available("text"):
         return {}
     prompt = f"""This is a teacher's typed answer key. Split it into the model answer for each of
 these question labels: {labels}. Copy the answer text exactly; do not summarise or add anything.
@@ -101,9 +144,10 @@ Answer key:
 {text}
 
 Respond ONLY with valid JSON: {{"answers": {{"<label>": "<answer text>"}}}}"""
-    raw = _call_gemini_vision([], prompt, timeout=90, model=GEMINI_TEXT_MODEL)
+    raw, engine = call_llm(prompt, task="text", timeout=90)
     if not raw:
         return {}
+    gemini_split.last_engine = engine
     try:
         answers = json.loads(raw).get("answers", {})
         return {l: str(answers.get(l, "")).strip() for l in labels if answers.get(l)}
@@ -119,5 +163,5 @@ def split_answer_key(text: str, labels: List[str]) -> Tuple[Dict[str, str], str]
         return answers, "rules"
     second = gemini_split(text, labels)
     if len(second) > len(answers):
-        return second, GEMINI_TEXT_MODEL
+        return second, getattr(gemini_split, "last_engine", None) or "llm"
     return answers, "rules"

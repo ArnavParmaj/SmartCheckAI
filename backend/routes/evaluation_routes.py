@@ -24,6 +24,7 @@ class AnswerToGrade(BaseModel):
     max_marks: float = 5
     ocr_confidence: Optional[float] = None
     criteria: List[Dict[str, Any]] = []  # knowledge-base criteria with their key points
+    rules: List[str] = []  # rubric deductions and general marking guidelines
 
 
 class EvaluateRequest(BaseModel):
@@ -44,7 +45,7 @@ def evaluate_answers(req: EvaluateRequest):
     # One Gemini call for the whole sheet instead of one per answer
     second_opinions = gemini_grade_batch([
         {"question_id": a.question_id, "question_text": a.question_text, "model_answer": a.model_answer,
-         "criteria": criteria[a.question_id], "student_answer": a.student_answer}
+         "criteria": criteria[a.question_id], "rules": a.rules, "student_answer": a.student_answer}
         for a in req.answers if a.question_id in criteria
     ]) if req.use_gemini else {}
 
@@ -54,6 +55,7 @@ def evaluate_answers(req: EvaluateRequest):
             use_gemini=False,
             criteria=criteria.get(a.question_id),
             gemini_result=second_opinions.get(a.question_id),
+            rules=a.rules,
         )
         return {"question_id": a.question_id, **result}
 

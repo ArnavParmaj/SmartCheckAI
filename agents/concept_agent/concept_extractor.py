@@ -80,9 +80,10 @@ def extract_key_points(model_answer: str, max_points: int = 8) -> Dict[str, Any]
 
 
 def concept_label(concept: str) -> str:
-    """Short name for a key point: the term before ':' if there is one, else its first words."""
-    head = concept.split(":", 1)[0].strip()
-    if ":" in concept and len(head.split()) <= 5:
-        return head
-    words = concept.split()
+    """Short name for a key point: the term before ':' / '—' / ' - ' if there is one, else its first words."""
+    text = re.sub(r"^(?:and|or|also|the)\s+", "", concept.strip(), flags=re.IGNORECASE)
+    m = re.match(r"^(.{2,60}?)\s*(?::|\u2014|\u2013|\s-\s)", text)
+    if m and len(m.group(1).split()) <= 5:
+        return m.group(1).strip()
+    words = text.split()
     return " ".join(words[:6]) + ("…" if len(words) > 6 else "")

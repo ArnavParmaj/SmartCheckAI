@@ -4,6 +4,7 @@ import { extractQuestionsFromFile, extractRubricFromFile } from '../lib/backendA
 import AnswerKeyStep from './AnswerKeyStep';
 import KnowledgeReviewStep from './KnowledgeReviewStep';
 import CriteriaEditor from './CriteriaEditor';
+import { PROGRAM, SUBJECTS, SEMESTERS, DEFAULT_SUBJECT, DEFAULT_SEMESTER } from '../lib/academics';
 
 const STEPS = [
   { id: 1, label: 'Exam Details' },
@@ -12,16 +13,14 @@ const STEPS = [
   { id: 4, label: 'Review Knowledge' },
 ];
 
-const SUBJECTS = ['Mathematics', 'Science', 'History', 'English', 'Geography', 'Economics', 'Computer Science', 'Physics', 'Chemistry', 'Biology'];
-const GRADES = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
 export default function CreateExamWizard() {
   const { createExam, navigate, showNotification } = useApp();
   const [step, setStep] = useState(1);
   const [examData, setExamData] = useState({
     title: '',
-    subject: '',
-    grade: '',
+    subject: DEFAULT_SUBJECT,
+    semester: DEFAULT_SEMESTER,
     totalStudents: '',
     maxScore: '',
     dateCreated: new Date().toISOString().split('T')[0],
@@ -83,7 +82,7 @@ export default function CreateExamWizard() {
       }));
 
       setQuestions(newQuestions);
-      const engineLabel = res.engine?.startsWith('gemini') ? `Gemini (${res.engine})` : 'Local OCR';
+      const engineLabel = res.engine && !res.engine.startsWith('local') ? res.engine : 'Local OCR';
       showNotification(`Extracted ${newQuestions.length} questions using ${engineLabel}!`, 'success');
     } catch (err) {
       console.error('Question paper extraction failed:', err);
@@ -108,27 +107,30 @@ export default function CreateExamWizard() {
         return;
       }
 
-      // Every rubric row for a question becomes one of its marking criteria
+      // Rubric rows: marked criteria per question, deduction rules per question, and
+      // general guidelines that apply to every question
       const norm = (label) => String(label || '').replace(/\s+/g, '').toUpperCase();
+      const kind = (r) => r.type || 'criterion';
+      const guidelines = rubrics.filter(r => kind(r) === 'guideline').map(r => r.description || r.criterion).filter(Boolean);
       setQuestions(prev => prev.map(q => {
         const rows = rubrics.filter(r => norm(r.question_id) === norm(q.label));
-        if (rows.length === 0) return q;
+        const criteriaRows = rows.filter(r => kind(r) === 'criterion');
+        const deductions = rows.filter(r => kind(r) === 'deduction').map(r => r.description || r.criterion).filter(Boolean);
         return {
           ...q,
-          criteria: rows.map(r => ({
-            criterion: r.criterion || '',
-            description: r.description || '',
-            marks: r.max_marks ?? '',
-          })),
+          criteria: criteriaRows.length
+            ? criteriaRows.map(r => ({ criterion: r.criterion || '', description: r.description || '', marks: r.max_marks ?? '' }))
+            : q.criteria,
+          rules: [...guidelines, ...deductions],
         };
       }));
-      const unmatched = rubrics.filter(r => !questions.some(q => norm(q.label) === norm(r.question_id)));
+      const unmatched = rubrics.filter(r => kind(r) !== 'guideline' && !questions.some(q => norm(q.label) === norm(r.question_id)));
       if (unmatched.length) {
         showNotification(`${unmatched.length} rubric row(s) didn't match a question label; add them by hand if needed.`, 'warning');
       }
 
-      const engineLabel = res.engine?.startsWith('gemini') ? `Gemini (${res.engine})` : 'Local OCR';
-      showNotification(`Grading rubrics successfully attached using ${engineLabel}!`, 'success');
+      const engineLabel = res.engine && !res.engine.startsWith('local') ? res.engine : 'Local OCR';
+      showNotification(`Rubric attached (${engineLabel}): ${rubrics.filter(r => kind(r) === 'criterion').length} criteria, ${rubrics.filter(r => kind(r) !== 'criterion').length} marking rules.`, 'success');
     } catch (err) {
       console.error('Rubric scan error:', err);
       showNotification(`Failed to scan rubric: ${err.message}`, 'error');
@@ -137,7 +139,7 @@ export default function CreateExamWizard() {
     }
   };
 
-  const canProceedStep1 = examData.title && examData.subject && examData.grade;
+  const canProceedStep1 = examData.title && examData.subject && examData.semester;
   const canProceedStep2 = questions.every(q => q.text && q.maxMarks);
 
   const canProceedStep3 = questions.some(q => q.modelAnswer?.trim());
@@ -214,24 +216,27 @@ export default function CreateExamWizard() {
               <input
                 value={examData.title}
                 onChange={e => updateField('title', e.target.value)}
-                placeholder="e.g., Mid-term Algebra Test"
+                placeholder="e.g., BDA Unit Test 1"
                 className="input-field"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-label-md text-on-surface mb-1.5">Subject *</label>
-                <select value={examData.subject} onChange={e => updateField('subject', e.target.value)} className="input-field">
-                  <option value="">Select Subject</option>
-                  {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                <label className="block text-label-md text-on-surface mb-1.5" htmlFor="exam-subject">Subject *</label>
+                <select id="exam-subject" value={examData.subject} onChange={e => updateField('subject', e.target.value)} className="input-field">
+                  {SUBJECTS.map(s => (
+                    <option key={s.value} value={s.value} disabled={!s.available}>
+                      {s.available ? s.value : `${s.value} (coming soon)`}
+                    </option>
+                  ))}
                 </select>
+                <p className="text-[11px] text-on-surface-variant mt-1">{PROGRAM}. More engineering subjects are coming soon.</p>
               </div>
               <div>
-                <label className="block text-label-md text-on-surface mb-1.5">Grade / Class *</label>
-                <select value={examData.grade} onChange={e => updateField('grade', e.target.value)} className="input-field">
-                  <option value="">Select Grade</option>
-                  {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                <label className="block text-label-md text-on-surface mb-1.5" htmlFor="exam-semester">Semester *</label>
+                <select id="exam-semester" value={examData.semester} onChange={e => updateField('semester', e.target.value)} className="input-field">
+                  {SEMESTERS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>

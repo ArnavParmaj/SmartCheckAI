@@ -26,13 +26,24 @@ for p in [str(project_root), str(backend_dir)]:
 from agents.ocr_agent.preprocessing import preprocess_image
 from agents.ocr_agent.ocr import run_ocr
 from agents.ocr_agent.segmentation import segment_answers
+from agents.concept_agent.answer_key import read_typed_document
 from agents.ocr_agent.gemini_ocr import (
-    GEMINI_MODEL,
     is_gemini_available,
     gemini_extract_questions,
     gemini_extract_rubric,
     gemini_extract_student_answers,
 )
+
+
+def _typed_text(file_bytes: bytes, filename: str) -> str:
+    """Text of a typed PDF/DOCX/TXT ('' for images and scanned PDFs)."""
+    if Path(filename or "").suffix.lower() not in (".pdf", ".docx", ".txt"):
+        return ""
+    try:
+        text = read_typed_document(file_bytes, filename)
+    except Exception:
+        return ""
+    return text if len(text.strip()) >= 50 else ""
 from config.supabase_client import supabase
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
@@ -88,11 +99,11 @@ async def extract_questions_endpoint(
 
     try:
         if is_gemini_available():
-            gemini_qs = gemini_extract_questions(page_images)
+            gemini_qs, engine = gemini_extract_questions(page_images, _typed_text(file_bytes, file.filename or ""))
             if gemini_qs:
                 return {
                     "status": "success",
-                    "engine": GEMINI_MODEL,
+                    "engine": engine,
                     "questions": gemini_qs,
                 }
 
@@ -146,11 +157,11 @@ async def extract_rubric_endpoint(
 
     try:
         if is_gemini_available():
-            rubrics = gemini_extract_rubric(page_images)
+            rubrics, engine = gemini_extract_rubric(page_images, _typed_text(file_bytes, file.filename or ""))
             if rubrics:
                 return {
                     "status": "success",
-                    "engine": GEMINI_MODEL,
+                    "engine": engine,
                     "rubrics": rubrics,
                 }
 
@@ -263,19 +274,20 @@ async def process_ocr(
         answer_confidences: Dict[str, float] = {}
         all_confidences = []
         engine_used = "local-rapidocr"
+        student_header: Dict[str, str] = {}
 
         # Try Gemini Multimodal handwriting transcription first if configured
         if is_gemini_available():
             try:
                 labels = json.loads(question_labels) if question_labels else None
-                gemini_answers = gemini_extract_student_answers(page_image_paths, labels)
+                gemini_answers, vision_engine, student_header = gemini_extract_student_answers(page_image_paths, labels)
                 if gemini_answers:
                     for label, item in gemini_answers.items():
                         combined_answers[label] = item["text"]
                         if item["confidence"] is not None:
                             answer_confidences[label] = item["confidence"]
                     all_confidences = list(answer_confidences.values())
-                    engine_used = GEMINI_MODEL
+                    engine_used = vision_engine
             except Exception as e:
                 print(f"Gemini OCR failed, falling back to local OCR: {e}")
 
@@ -387,6 +399,7 @@ async def process_ocr(
             "ocr_confidence": overall_confidence,
             "answers": combined_answers,
             "answer_confidences": {k: round(v, 4) for k, v in answer_confidences.items()},
+            "student": student_header,
         }
 
     except Exception as err:

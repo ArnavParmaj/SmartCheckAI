@@ -22,6 +22,7 @@ class QuestionSpec(BaseModel):
     text: str = ""
     max_marks: float = 5
     criteria: List[Dict[str, Any]] = []
+    rules: List[str] = []  # rubric deductions and general marking guidelines
     model_answer: str = ""
 
 
@@ -44,7 +45,7 @@ async def build_from_answer_key(
     knowledge = {}
     for q in specs:
         model_answer = answers.get(q.label, "")
-        knowledge[q.label] = build_knowledge(q.text, model_answer, q.criteria, q.max_marks)
+        knowledge[q.label] = build_knowledge(q.text, model_answer, q.criteria, q.max_marks, q.rules)
 
     missing = [q.label for q in specs if not answers.get(q.label)]
     return {"status": "success", "split_engine": engine, "knowledge": knowledge, "missing": missing}
@@ -53,4 +54,4 @@ async def build_from_answer_key(
 @router.post("/rebuild")
 def rebuild_question(q: QuestionSpec) -> Dict[str, Any]:
     """Rebuild one question's knowledge after faculty edit its model answer or criteria."""
-    return {"status": "success", "knowledge": build_knowledge(q.text, q.model_answer, q.criteria, q.max_marks)}
+    return {"status": "success", "knowledge": build_knowledge(q.text, q.model_answer, q.criteria, q.max_marks, q.rules)}

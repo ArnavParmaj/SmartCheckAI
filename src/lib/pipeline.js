@@ -8,17 +8,7 @@ const normaliseLabel = (label) => String(label || '').replace(/\s+/g, '').toUppe
 // onStage(text) reports progress. Returns the finished submission.
 export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () => {} }) {
   const examQuestions = exam.questions || [];
-  const studentName = fileItem.studentName?.trim() || fileItem.name.replace(/\.[^/.]+$/, '');
-  const rollNumber = fileItem.rollNumber?.trim() || '';
   const warnings = [];
-
-  let sheetId = null;
-  if (!isDemo) {
-    onStage('Uploading');
-    const uploadRes = await uploadAnswerSheetDB(exam.id, fileItem.file, { studentName, rollNumber });
-    if (uploadRes.error) warnings.push('Not saved to the database');
-    else sheetId = uploadRes.sheetId;
-  }
 
   onStage('Reading handwriting');
   let ocrRes = null;
@@ -26,6 +16,20 @@ export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () 
     ocrRes = await processAnswerSheetOCR(fileItem.file, null, examQuestions.map(q => q.label));
   } catch (err) {
     warnings.push(`OCR failed: ${err.message}`);
+  }
+
+  // Name and roll number: typed by faculty > written on the booklet > guessed from the file name
+  const header = ocrRes?.student || {};
+  const studentName = (fileItem.nameEdited ? fileItem.studentName?.trim() : header.name || fileItem.studentName?.trim())
+    || fileItem.name.replace(/\.[^/.]+$/, '');
+  const rollNumber = (fileItem.nameEdited ? fileItem.rollNumber?.trim() : header.roll_number || fileItem.rollNumber?.trim()) || '';
+
+  let sheetId = null;
+  if (!isDemo) {
+    onStage('Uploading');
+    const uploadRes = await uploadAnswerSheetDB(exam.id, fileItem.file, { studentName, rollNumber });
+    if (uploadRes.error) warnings.push('Not saved to the database');
+    else sheetId = uploadRes.sheetId;
   }
   const rawAnswers = ocrRes?.answers || {};
   const answerConfidences = ocrRes?.answer_confidences || {};

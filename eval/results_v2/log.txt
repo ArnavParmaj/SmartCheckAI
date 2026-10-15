@@ -1,0 +1,44 @@
+Set 2: 4 questions via groq:openai/gpt-oss-120b: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 2: 33 rubric rows via groq:openai/gpt-oss-120b {'criterion': 15, 'deduction': 9, 'guideline': 9}
+Set 2: answer key split via rules; missing []
+   Q1(a): 5 rubric criteria -> [('Definition of Big Data', 1.0, 1), ('Volume + example', 1.0, 1), ('Velocity + example', 1.0, 1), ('Variety + example', 1.0, 1), ('Significance', 1.0, 1)]
+   Q2(a): 3 rubric criteria -> [('Definition', 1.0, 3), ('Major features (any 4)', 3.0, 5), ('Advantages / suitability', 1.0, 4)]
+   Q3(a): 3 rubric criteria -> [('NameNode role', 2.0, 4), ('DataNode role', 2.0, 3), ('Interaction / architecture', 1.0, 2)]
+   Q4(a): 4 rubric criteria -> [('Definition', 1.0, 1), ('Key features (any 4)', 2.0, 3), ('Advantages over RDBMS (any 3)', 1.5, 3), ('Balanced judgement', 0.5, 1)]
+   Set2_Student1_21CE1042_Aarav_Kulkarni.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=5.0(hybrid), Q2(a)=5.0(hybrid), Q3(a)=5.0(hybrid), Q4(a)=5.0(hybrid) | 35.2s
+   Set2_Student2_21CE1077_Sneha_Patil.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=4.0(hybrid), Q2(a)=4.75(hybrid), Q3(a)=4.25(hybrid), Q4(a)=4.5(hybrid) | 29.4s
+   Set2_Student3_21CE1019_Rohan_Deshmukh.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=2.5*(hybrid), Q2(a)=3.0*(hybrid), Q3(a)=3.0*(hybrid), Q4(a)=2.25*(hybrid) | 6.9s
+   Set2_Student4_21CE1058_Kunal_Shinde.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=1.75*(hybrid), Q2(a)=1.25*(hybrid), Q3(a)=1.0*(hybrid), Q4(a)=2.0*(hybrid) | 6.5s
+   Set2_Student5_21CE1093_Vikas_More.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=1.75*(hybrid), Q2(a)=0.25*(hybrid), Q3(a)=1.25*(hybrid), Q4(a)=0.0(local) | 5.3s
+Set 3: 4 questions via gemini:gemini-flash-lite-latest: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 3: 36 rubric rows via gemini:gemini-flash-lite-latest {'criterion': 19, 'deduction': 9, 'guideline': 8}
+Set 3: answer key split via rules; missing []
+   Q1(a): 5 rubric criteria -> [('Volume', 1.0, 2), ('Velocity', 1.0, 2), ('Variety', 1.0, 2), ('Veracity', 1.0, 3), ('Value', 1.0, 3)]
+   Q2(a): 5 rubric criteria -> [('Full form + purpose', 1.0, 1), ('ResourceManager', 1.0, 2), ('NodeManager', 1.0, 1), ('ApplicationMaster', 1.0, 1), ('Benefits', 1.0, 2)]
+   Q3(a): 5 rubric criteria -> [('Definition', 1.0, 1), ('Mapper role', 1.25, 1), ('Shuffle & sort', 0.75, 1), ('Reducer role', 1.25, 1), ('Example', 0.75, 1)]
+   Q4(a): 4 rubric criteria -> [('Key-value store', 1.25, 2), ('Document database', 1.25, 2), ('Column-family database', 1.25, 2), ('Graph database', 1.25, 2)]
+   Set3_Student1_21CE2011_Priya_Joshi.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=5.0(hybrid), Q2(a)=5.0(hybrid), Q3(a)=5.0(hybrid), Q4(a)=5.0(hybrid) | 12.8s
+   Set3_Student2_21CE2034_Aditya_Sawant.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=5.0(hybrid), Q2(a)=4.75(hybrid), Q3(a)=3.75(hybrid), Q4(a)=3.5(hybrid) | 10.4s
+   Set3_Student3_21CE2050_Meera_Iyer.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=2.5(hybrid), Q2(a)=3.25*(hybrid), Q3(a)=2.25*(hybrid), Q4(a)=1.75*(hybrid) | 13.4s
+   Set3_Student4_21CE2066_Saurabh_Pawar.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=1.75*(hybrid), Q2(a)=2.0*(hybrid), Q3(a)=2.0*(hybrid), Q4(a)=1.75*(hybrid) | 7.0s
+   Set3_Student5_21CE2081_Nikhil_Gaikwad.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=2.25*(hybrid), Q2(a)=0.75*(hybrid), Q3(a)=1.25*(hybrid), Q4(a)=0.0(local) | 11.2s
+Set 4: 4 questions via gemini:gemini-flash-lite-latest: ['Q1(a)', 'Q2(a)', 'Q3(a)', 'Q4(a)']
+Set 4: 31 rubric rows via gemini:gemini-flash-lite-latest {'criterion': 13, 'deduction': 9, 'guideline': 9}
+Set 4: answer key split via rules; missing []
+   Q1(a): 2 rubric criteria -> [('Challenges (any 5)', 4.5, 5), ('Mitigation', 0.5, 5)]
+   Q2(a): 5 rubric criteria -> [('Data type / format', 1.0, 0), ('Architecture', 1.0, 3), ('Schema & scaling', 1.0, 1), ('Volume / velocity', 1.0, 1), ('Use cases & conclusion', 1.0, 1)]
+   Q3(a): 5 rubric criteria -> [('Input splitting', 1.0, 1), ('Map phase', 1.0, 3), ('Shuffle & sort', 1.0, 1), ('Reduce phase & output', 1.0, 1), ('Example', 1.0, 2)]
+   Q4(a): 1 rubric criteria -> [('Applications (any 5)', 5.0, 6)]
+   Set4_Student1_21CE3007_Ananya_Rao.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=4.75(hybrid), Q2(a)=4.75(hybrid), Q3(a)=5.0(hybrid), Q4(a)=5.0(hybrid) | 20.5s
+   Set4_Student2_21CE3029_Harsh_Mehta.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=3.5(local), Q2(a)=3.75*(hybrid), Q3(a)=4.25(hybrid), Q4(a)=3.25(hybrid) | 12.1s
+   Set4_Student3_21CE3045_Tanvi_Kadam.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=3.0(local), Q2(a)=2.5*(hybrid), Q3(a)=2.0*(hybrid), Q4(a)=1.75*(hybrid) | 7.5s
+   Set4_Student4_21CE3062_Omkar_Jadhav.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=2.5*(hybrid), Q2(a)=1.25*(hybrid), Q3(a)=2.25*(hybrid), Q4(a)=1.0(hybrid) | 12.5s
+   Set4_Student5_21CE3088_Rahul_Chavan.pdf: OCR gemini:gemini-3.5-flash-lite | Q1(a)=0.75*(hybrid), Q2(a)=0.25*(hybrid), Q3(a)=0.0(local), Q4(a)=1.0*(hybrid) | 5.3s
+
+Answers compared: 60
+Mean absolute error: 0.47 marks (of 5)
+Within ±0.5: 65%   Within ±1: 88%
+Bias (AI − reference): +0.40
+Errors > 1 mark: 7, of which flagged for review: 6
+
+Wrote eval/results_v2/raw.json, comparison.csv, log.txt

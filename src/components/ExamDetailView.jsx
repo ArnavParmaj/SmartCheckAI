@@ -31,7 +31,7 @@ export default function ExamDetailView() {
             <h1 className="text-headline-md font-bold text-on-surface">{activeExam.title}</h1>
             <span className={getStatusColor(activeExam.status)}>{activeExam.status}</span>
           </div>
-          <p className="text-body-sm text-on-surface-variant">{activeExam.subject} · {activeExam.grade} · {activeExam.dateCreated}</p>
+          <p className="text-body-sm text-on-surface-variant">{[activeExam.subject, activeExam.semester, activeExam.dateCreated].filter(Boolean).join(' · ')}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('export')} className="btn-outline hidden sm:flex items-center gap-1">

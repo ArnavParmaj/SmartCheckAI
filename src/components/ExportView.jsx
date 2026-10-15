@@ -73,7 +73,7 @@ export default function ExportModal() {
               <span className="material-symbols-outlined text-[32px] text-primary">description</span>
               <div>
                 <p className="text-label-md font-bold text-on-surface">{exam.title}</p>
-                <p className="text-body-sm text-on-surface-variant">{exam.subject} · {exam.grade} · {exam.totalStudents} students</p>
+                <p className="text-body-sm text-on-surface-variant">{[exam.subject, exam.semester, `${exam.totalStudents} students`].filter(Boolean).join(' · ')}</p>
               </div>
               <div className="ml-auto text-right">
                 <p className="text-headline-md font-bold text-on-surface">{subs.length}</p>
