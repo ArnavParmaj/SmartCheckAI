@@ -1,7 +1,14 @@
 import { useApp } from '../context/AppContext';
 
 export default function ResultsView() {
-  const { exams, navigate } = useApp();
+  const { exams, navigate, getSubmissionsForExam } = useApp();
+
+  // Share of graded students in each score band
+  const distribution = (examId) => {
+    const pcts = getSubmissionsForExam(examId).filter(s => s.aiScore !== null && s.aiScore !== undefined).map(s => s.percentage);
+    const share = (lo, hi) => (pcts.length ? (pcts.filter(p => p >= lo && p < hi).length / pcts.length) * 100 : 0);
+    return [share(90, 101), share(75, 90), share(50, 75), share(0, 50)];
+  };
   const completedExams = exams.filter(e => e.avgScore !== null && e.avgScore !== undefined);
 
   return (
@@ -11,7 +18,9 @@ export default function ResultsView() {
         <p className="text-body-sm text-on-surface-variant">Overview of all completed exam evaluations.</p>
       </div>
 
-      {completedExams.map(exam => (
+      {completedExams.map(exam => {
+        const [top, good, mid, low] = distribution(exam.id);
+        return (
         <div key={exam.id} className="card p-5">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
@@ -28,10 +37,10 @@ export default function ResultsView() {
               <span className="text-[11px] text-on-surface-variant">Avg: {exam.avgScore}%</span>
             </div>
             <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
-              <div className="bg-secondary h-full rounded-l-full transition-all" style={{ width: '30%' }} title="90-100%" />
-              <div className="bg-secondary-fixed-dim h-full transition-all" style={{ width: '35%' }} title="75-89%" />
-              <div className="bg-tertiary-fixed h-full transition-all" style={{ width: '20%' }} title="50-74%" />
-              <div className="bg-error-container h-full rounded-r-full transition-all" style={{ width: '15%' }} title="<50%" />
+              <div className="bg-secondary h-full rounded-l-full transition-all" style={{ width: `${top}%` }} title="90-100%" />
+              <div className="bg-secondary-fixed-dim h-full transition-all" style={{ width: `${good}%` }} title="75-89%" />
+              <div className="bg-tertiary-fixed h-full transition-all" style={{ width: `${mid}%` }} title="50-74%" />
+              <div className="bg-error-container h-full rounded-r-full transition-all" style={{ width: `${low}%` }} title="<50%" />
             </div>
             <div className="flex justify-between mt-1 text-[10px] text-on-surface-variant">
               <span>90-100%</span><span>75-89%</span><span>50-74%</span><span>&lt;50%</span>
@@ -53,7 +62,8 @@ export default function ResultsView() {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {completedExams.length === 0 && (
         <div className="card p-12 text-center text-on-surface-variant">

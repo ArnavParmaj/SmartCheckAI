@@ -20,6 +20,7 @@ from routes.ocr_routes import router as ocr_router
 from routes.concept_routes import router as concept_router
 from routes.evaluation_routes import router as evaluation_router
 from routes.feedback_routes import router as feedback_router
+from routes.knowledge_routes import router as knowledge_router
 
 app = FastAPI(
     title="SmartCheck AI Backend",
@@ -46,6 +47,7 @@ app.include_router(ocr_router)
 app.include_router(concept_router)
 app.include_router(evaluation_router)
 app.include_router(feedback_router)
+app.include_router(knowledge_router)
 
 
 @app.get("/health")

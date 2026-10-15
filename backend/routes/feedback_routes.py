@@ -1,20 +1,26 @@
 """
 Feedback Routes
-Handles endpoints for generating targeted, constructive feedback for students
-based on evaluation scores and missing conceptual elements.
+Builds student-facing feedback from a grade and the covered / missing concepts.
 """
 
+from typing import List
+
 from fastapi import APIRouter
+from pydantic import BaseModel
+
+from agents.feedback_agent.feedback_generator import template_feedback
 
 router = APIRouter(prefix="/feedback", tags=["Feedback"])
 
 
-# Placeholder route: will handle generating targeted feedback based on evaluation results
+class FeedbackRequest(BaseModel):
+    marks_awarded: float
+    max_marks: float
+    concepts_covered: List[str] = []
+    concepts_missed: List[str] = []
+
+
 @router.post("/generate")
-async def generate_feedback():
-    """
-    Placeholder endpoint for feedback generation.
-    Will handle analyzing missing concepts, semantic gaps, and score rationales
-    to produce student-facing improvement feedback and teacher review summaries.
-    """
-    return {"message": "Feedback generation placeholder"}
+def generate(req: FeedbackRequest):
+    feedback = template_feedback(req.marks_awarded, req.max_marks, req.concepts_covered, req.concepts_missed)
+    return {"status": "success", "feedback": feedback}

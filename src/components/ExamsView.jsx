@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { mockStudentSubmissions, getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
+import { getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
 
 export default function ExamsView() {
   const { exams, navigate, deleteExam } = useApp();
@@ -35,7 +35,6 @@ export default function ExamsView() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map(exam => {
-          const examSubs = mockStudentSubmissions.filter(s => s.examId === exam.id);
           return (
             <div key={exam.id} className="card p-5 flex flex-col gap-4 hover:shadow-modal transition-shadow duration-200 cursor-pointer" onClick={() => navigate('exam-detail', { exam })}>
               <div className="flex items-start justify-between gap-2">

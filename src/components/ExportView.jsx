@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { mockStudentSubmissions } from '../data/mockData';
+import { buildGradebook, toCSV, toJSON, downloadFile, openPrintReport } from '../lib/exportResults';
 
 export default function ExportModal() {
-  const { navigate, exams, showNotification } = useApp();
+  const { navigate, exams, showNotification, getSubmissionsForExam, logAudit } = useApp();
   const [selectedExam, setSelectedExam] = useState(exams[0]?.id || '');
   const [format, setFormat] = useState('csv');
   const [includeOptions, setIncludeOptions] = useState({
@@ -15,17 +15,35 @@ export default function ExportModal() {
   const [exporting, setExporting] = useState(false);
   const [done, setDone] = useState(false);
 
-  const handleExport = async () => {
+  const exam = exams.find(e => e.id === selectedExam);
+  const subs = getSubmissionsForExam(selectedExam);
+
+  const handleExport = () => {
+    if (!exam) return;
+    if (subs.length === 0) {
+      showNotification('This exam has no graded submissions to export yet.', 'warning');
+      return;
+    }
     setExporting(true);
-    await new Promise(r => setTimeout(r, 2000));
+    const baseName = `${exam.title.replace(/[^\w-]+/g, '_')}_results`;
+    const gradebook = buildGradebook(subs, includeOptions);
+
+    if (format === 'csv') {
+      downloadFile(toCSV(gradebook), `${baseName}.csv`, 'text/csv;charset=utf-8');
+    } else if (format === 'json') {
+      downloadFile(toJSON(exam, subs), `${baseName}.json`, 'application/json');
+    } else if (!openPrintReport(exam, gradebook)) {
+      setExporting(false);
+      showNotification('Allow pop-ups for this site to create the PDF report.', 'warning');
+      return;
+    }
+
+    logAudit({ event: 'Results Exported', examId: exam.id, examTitle: exam.title, detail: `${format.toUpperCase()} with ${subs.length} student(s).` });
     setExporting(false);
     setDone(true);
-    showNotification(`Gradebook exported as ${format.toUpperCase()} successfully!`, 'success');
+    showNotification(format === 'pdf' ? 'Report opened - choose "Save as PDF" in the print dialog.' : `Gradebook exported as ${format.toUpperCase()}!`, 'success');
     setTimeout(() => setDone(false), 3000);
   };
-
-  const exam = exams.find(e => e.id === selectedExam);
-  const subs = mockStudentSubmissions.filter(s => s.examId === selectedExam);
 
   return (
     <div className="max-w-2xl mx-auto animate-fadeIn">
@@ -68,10 +86,9 @@ export default function ExportModal() {
         {/* Format selector */}
         <div>
           <label className="block text-label-md text-on-surface mb-3">Export Format</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {[
-              { id: 'csv', label: 'CSV', icon: 'table_chart', desc: 'Excel/Sheets compatible' },
-              { id: 'xlsx', label: 'Excel', icon: 'table_view', desc: 'Formatted spreadsheet' },
+              { id: 'csv', label: 'CSV', icon: 'table_chart', desc: 'Opens in Excel/Sheets' },
               { id: 'pdf', label: 'PDF Report', icon: 'picture_as_pdf', desc: 'Printable summary' },
               { id: 'json', label: 'JSON', icon: 'data_object', desc: 'For LMS/API sync' },
             ].map(f => (
@@ -112,10 +129,10 @@ export default function ExportModal() {
 
         {/* LMS Integration */}
         <div className="border border-outline-variant rounded-xl p-4">
-          <p className="text-label-md font-semibold text-on-surface mb-3">LMS Integration</p>
+          <p className="text-label-md font-semibold text-on-surface mb-3">LMS Integration <span className="text-[11px] font-normal text-on-surface-variant">(coming soon)</span></p>
           <div className="grid grid-cols-2 gap-2">
             {['Google Classroom', 'Canvas LMS', 'Moodle', 'Blackboard'].map(lms => (
-              <button key={lms} className="flex items-center gap-2 p-2.5 bg-surface-container-low rounded-lg border border-outline-variant hover:border-primary hover:bg-primary-fixed/20 transition-all text-sm text-on-surface-variant hover:text-primary">
+              <button key={lms} disabled className="flex items-center gap-2 p-2.5 bg-surface-container-low rounded-lg border border-outline-variant text-sm text-on-surface-variant opacity-50 cursor-not-allowed">
                 <span className="material-symbols-outlined text-[18px]">sync</span>
                 {lms}
               </button>
@@ -129,7 +146,7 @@ export default function ExportModal() {
             <span className="material-symbols-outlined text-secondary text-[24px]">check_circle</span>
             <div>
               <p className="text-label-md font-bold text-secondary">Export Complete!</p>
-              <p className="text-body-sm text-secondary/80">Your file has been downloaded successfully.</p>
+              <p className="text-body-sm text-secondary/80">{format === 'pdf' ? 'Report opened in a new tab.' : 'Your file has been downloaded.'}</p>
             </div>
           </div>
         ) : (

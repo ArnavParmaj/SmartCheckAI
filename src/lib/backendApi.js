@@ -26,9 +26,12 @@ export async function checkBackendHealth() {
  * @param {string} [answerSheetId] - Optional Supabase answer_sheet UUID.
  * @returns {Promise<{status: string, ocr_confidence?: number, answers?: Record<string, string>, message?: string}>}
  */
-export async function processAnswerSheetOCR(file, answerSheetId = null) {
+export async function processAnswerSheetOCR(file, answerSheetId = null, questionLabels = null) {
   const formData = new FormData();
   formData.append('file', file);
+  if (questionLabels?.length) {
+    formData.append('question_labels', JSON.stringify(questionLabels));
+  }
   if (answerSheetId) {
     formData.append('answer_sheet_id', answerSheetId);
   }
@@ -144,10 +147,42 @@ export async function generateFeedback(payload) {
   return await res.json();
 }
 
+/**
+ * Build the per-question knowledge base from the faculty answer key.
+ * @param {Array} questions - [{ label, text, max_marks, criteria }]
+ * @param {{ file?: File, text?: string }} answerKey - typed file (.pdf/.docx/.txt) or pasted text
+ */
+export async function buildKnowledge(questions, { file = null, text = '' } = {}) {
+  const formData = new FormData();
+  formData.append('questions', JSON.stringify(questions));
+  if (file) formData.append('file', file);
+  if (text) formData.append('answer_key_text', text);
+
+  const res = await fetch(`${BACKEND_BASE_URL}/knowledge/build`, { method: 'POST', body: formData });
+  if (!res.ok) throw new Error(`Answer key processing failed (${res.status})`);
+  return await res.json();
+}
+
+/**
+ * Rebuild one question's knowledge after the faculty edits it.
+ * @param {Object} question - { label, text, max_marks, criteria, model_answer }
+ */
+export async function rebuildKnowledge(question) {
+  const res = await fetch(`${BACKEND_BASE_URL}/knowledge/rebuild`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(question),
+  });
+  if (!res.ok) throw new Error(`Rebuilding knowledge failed (${res.status})`);
+  return await res.json();
+}
+
 export default {
   checkBackendHealth,
   processAnswerSheetOCR,
   extractConcepts,
   evaluateAnswers,
   generateFeedback,
+  buildKnowledge,
+  rebuildKnowledge,
 };

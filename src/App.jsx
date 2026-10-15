@@ -6,6 +6,9 @@ import AuthView from './components/AuthView';
 import DashboardView from './components/DashboardView';
 import ExamsView from './components/ExamsView';
 import ExamDetailView from './components/ExamDetailView';
+import EvaluatePapersView from './components/EvaluatePapersView';
+import ReviewQueueView from './components/ReviewQueueView';
+import ClassAnalysisView from './components/ClassAnalysisView';
 import CreateExamWizard from './components/CreateExamWizard';
 import OCRReviewView from './components/OCRReviewView';
 import ReviewApproveView from './components/ReviewApproveView';
@@ -31,7 +34,9 @@ function AppShell() {
           {currentView === 'exams' && <ExamsView />}
           {currentView === 'exam-detail' && <ExamDetailView />}
           {currentView === 'create-exam' && <CreateExamWizard />}
-          {currentView === 'upload-sheets' && <CreateExamWizard />}
+          {currentView === 'upload-sheets' && <EvaluatePapersView />}
+          {currentView === 'review-queue' && <ReviewQueueView />}
+          {currentView === 'class-analysis' && <ClassAnalysisView />}
           {currentView === 'ocr-review' && <OCRReviewView />}
           {currentView === 'review-approve' && <ReviewApproveView />}
           {currentView === 'results' && <ResultsView />}

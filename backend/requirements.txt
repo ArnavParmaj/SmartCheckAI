@@ -14,3 +14,4 @@ Pillow
 pymupdf
 python-multipart
 numpy
+python-docx

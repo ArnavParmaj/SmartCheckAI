@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
 export default function Toast() {

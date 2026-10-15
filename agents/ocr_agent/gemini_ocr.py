@@ -9,6 +9,8 @@ import base64
 import json
 import logging
 import os
+import re
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -25,16 +27,28 @@ else:
 logger = logging.getLogger("gemini_ocr")
 logger.setLevel(logging.INFO)
 
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_URL = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-)
+# Reading documents/handwriting needs the stronger model; the grading second opinion
+# and text-only tasks use Flash-Lite, which has much higher free-tier limits.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+GEMINI_TEXT_MODEL = os.getenv("GEMINI_TEXT_MODEL", "gemini-flash-lite-latest")
+GEMINI_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+# When a model's quota runs out (HTTP 429), skip it until Google says to retry,
+# instead of failing on every call
+_blocked_until: Dict[str, float] = {}
+DEFAULT_COOLDOWN_SECONDS = 600
 
 
-def is_gemini_available() -> bool:
-    """Check if a Gemini API key is configured."""
-    key = os.getenv("GEMINI_API_KEY", "").strip()
-    return bool(key)
+def is_gemini_available(model: Optional[str] = None) -> bool:
+    """Check that a Gemini API key is configured and the model isn't out of quota."""
+    if not os.getenv("GEMINI_API_KEY", "").strip():
+        return False
+    return time.time() >= _blocked_until.get(model or GEMINI_MODEL, 0)
+
+
+def _retry_delay_seconds(err_msg: str) -> float:
+    m = re.search(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"', err_msg)
+    return float(m.group(1)) if m else DEFAULT_COOLDOWN_SECONDS
 
 
 def _call_gemini_vision(
@@ -42,6 +56,7 @@ def _call_gemini_vision(
     prompt: str,
     response_mime_type: str = "application/json",
     timeout: int = 45,
+    model: Optional[str] = None,
 ) -> Optional[str]:
     """
     Call Gemini Multimodal Vision API with one or more images and a text prompt.
@@ -52,7 +67,10 @@ def _call_gemini_vision(
         logger.warning("GEMINI_API_KEY not found in environment.")
         return None
 
-    url = f"{GEMINI_URL}?key={api_key}"
+    model = model or GEMINI_MODEL
+    if not is_gemini_available(model):
+        return None
+    url = f"{GEMINI_URL_TEMPLATE.format(model=model)}?key={api_key}"
 
     parts: List[Dict[str, Any]] = [{"text": prompt}]
 
@@ -95,7 +113,12 @@ def _call_gemini_vision(
                 return part.get("text", "")
     except urllib.error.HTTPError as e:
         err_msg = e.read().decode("utf-8", errors="ignore")
-        logger.error(f"Gemini API HTTPError {e.code}: {err_msg}")
+        if e.code == 429:
+            delay = _retry_delay_seconds(err_msg)
+            _blocked_until[model] = time.time() + delay
+            logger.warning(f"Gemini {model} quota exhausted; using local models for the next {delay / 60:.0f} min")
+        else:
+            logger.error(f"Gemini API HTTPError {e.code}: {err_msg}")
     except Exception as e:
         logger.error(f"Gemini API Call Exception: {e}")
 
@@ -186,22 +209,30 @@ Respond ONLY with valid JSON conforming to this schema:
     return None
 
 
-def gemini_extract_student_answers(image_paths: List[str]) -> Optional[Dict[str, str]]:
+def gemini_extract_student_answers(image_paths: List[str], question_labels: Optional[List[str]] = None) -> Optional[Dict[str, Dict[str, Any]]]:
     """
     Extract and transcribe handwritten or printed student answer sheets,
     segmenting text by question identifier.
-    Returns: { "Q1(a)": "Transcribed answer...", "Q1(b)": "..." }
+    Returns: { "Q1(a)": {"text": "Transcribed answer...", "confidence": 0.92}, ... }
     """
-    prompt = """You are an advanced handwriting OCR engine for university exam answer sheets.
+    labels_hint = (
+        f"The exam's questions are labelled exactly: {', '.join(question_labels)}. Use exactly these labels as keys, "
+        "mapping however the student wrote the number (e.g. '1 a', 'Ans 1(a)', '1.a') to the matching label. "
+        "Leave out questions the student did not answer.\n"
+        if question_labels else ""
+    )
+    prompt = labels_hint + """You are an advanced handwriting OCR engine for university exam answer sheets.
 Analyze these answer sheet pages.
 Transcribe student answers with high fidelity, organizing them under their respective question labels (e.g. "Q1(a)", "Q1(b)", "Q2", etc.).
 Do not hallucinate or add explanations. Keep mathematical formulas, code, and diagrams (described in bracketed text) true to what the student wrote.
+For each answer also give "confidence": 0.0-1.0, how sure you are the transcription is exact.
+Lower it for messy, faint, crossed-out or ambiguous handwriting and for words you had to guess.
 
 Respond ONLY with valid JSON:
 {
   "answers": {
-    "Q1(a)": "Student answer transcription...",
-    "Q1(b)": "..."
+    "Q1(a)": {"text": "Student answer transcription...", "confidence": 0.93},
+    "Q1(b)": {"text": "...", "confidence": 0.71}
   }
 }
 """
@@ -213,7 +244,17 @@ Respond ONLY with valid JSON:
         parsed = json.loads(raw_json)
         answers = parsed.get("answers", {})
         if isinstance(answers, dict) and answers:
-            return answers
+            result: Dict[str, Dict[str, Any]] = {}
+            for label, value in answers.items():
+                if isinstance(value, dict):
+                    conf = value.get("confidence")
+                    result[label] = {
+                        "text": str(value.get("text", "")),
+                        "confidence": max(0.0, min(1.0, float(conf))) if conf is not None else None,
+                    }
+                else:
+                    result[label] = {"text": str(value), "confidence": None}
+            return result
     except Exception as e:
         logger.error(f"Failed to parse Gemini answers JSON: {e}")
 

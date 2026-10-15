@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { checkBackendHealth } from '../lib/backendApi';
 
 export default function TopBar() {
-  const { user, logout, navigate, isDark, toggleDark, setSidebarOpen, showNotification } = useApp();
+  const { user, logout, navigate, isDark, toggleDark, setSidebarOpen } = useApp();
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking' | 'connected' | 'disconnected'

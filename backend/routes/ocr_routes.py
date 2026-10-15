@@ -5,6 +5,7 @@ including PDF page conversion, image preprocessing, text extraction via PaddleOC
 per-question segmentation, and persisting results to Supabase.
 """
 
+import json
 import os
 import re
 import sys
@@ -26,6 +27,7 @@ from agents.ocr_agent.preprocessing import preprocess_image
 from agents.ocr_agent.ocr import run_ocr
 from agents.ocr_agent.segmentation import segment_answers
 from agents.ocr_agent.gemini_ocr import (
+    GEMINI_MODEL,
     is_gemini_available,
     gemini_extract_questions,
     gemini_extract_rubric,
@@ -90,7 +92,7 @@ async def extract_questions_endpoint(
             if gemini_qs:
                 return {
                     "status": "success",
-                    "engine": "gemini-2.5-flash",
+                    "engine": GEMINI_MODEL,
                     "questions": gemini_qs,
                 }
 
@@ -148,7 +150,7 @@ async def extract_rubric_endpoint(
             if rubrics:
                 return {
                     "status": "success",
-                    "engine": "gemini-2.5-flash",
+                    "engine": GEMINI_MODEL,
                     "rubrics": rubrics,
                 }
 
@@ -187,6 +189,7 @@ async def extract_rubric_endpoint(
 async def process_ocr(
     file: UploadFile = File(...),
     answer_sheet_id: Optional[str] = Form(None),
+    question_labels: Optional[str] = Form(None, description="JSON list of the exam's question labels"),
 ) -> Dict[str, Any]:
     """
     Process an uploaded answer sheet (image or PDF):
@@ -255,19 +258,26 @@ async def process_ocr(
 
         # Step 3: Run pipeline across each page (Gemini Multimodal or Local OCR Fallback)
         combined_answers: Dict[str, str] = {}
+        # Per-answer OCR confidence (0.0-1.0): Gemini rates each answer's legibility;
+        # local OCR uses the confidence of the page(s) the answer came from
+        answer_confidences: Dict[str, float] = {}
         all_confidences = []
         engine_used = "local-rapidocr"
 
         # Try Gemini Multimodal handwriting transcription first if configured
         if is_gemini_available():
             try:
-                gemini_answers = gemini_extract_student_answers(page_image_paths)
+                labels = json.loads(question_labels) if question_labels else None
+                gemini_answers = gemini_extract_student_answers(page_image_paths, labels)
                 if gemini_answers:
-                    combined_answers = gemini_answers
-                    all_confidences = [0.985]
-                    engine_used = "gemini-2.5-flash"
+                    for label, item in gemini_answers.items():
+                        combined_answers[label] = item["text"]
+                        if item["confidence"] is not None:
+                            answer_confidences[label] = item["confidence"]
+                    all_confidences = list(answer_confidences.values())
+                    engine_used = GEMINI_MODEL
             except Exception as e:
-                pass
+                print(f"Gemini OCR failed, falling back to local OCR: {e}")
 
         if not combined_answers:
             for page_path in page_image_paths:
@@ -290,6 +300,9 @@ async def process_ocr(
                 for q_key, ans_text in page_answers.items():
                     if not ans_text:
                         continue
+                    if page_confidence > 0:
+                        # An answer spanning pages is only as reliable as its worst page
+                        answer_confidences[q_key] = min(answer_confidences.get(q_key, 1.0), page_confidence)
                     if q_key in combined_answers:
                         combined_answers[q_key] = f"{combined_answers[q_key]}\n{ans_text}".strip()
                     else:
@@ -322,8 +335,10 @@ async def process_ocr(
         # Step 5: Save each question's OCR text and confidence to Supabase table: student_answers
         if answer_sheet_id and supabase is not None:
             try:
-                # Query questions for the corresponding exam if available to link question_id
-                question_mapping: Dict[int, str] = {}
+                # Map question labels (e.g. "Q1(b)") to question IDs for this exam.
+                # question_number is only the position in the exam, so it cannot tell
+                # sub-questions apart; matching needs the label column (migration 001).
+                question_mapping: Dict[str, str] = {}
                 try:
                     sheet_res = (
                         supabase.table("answer_sheets")
@@ -336,28 +351,28 @@ async def process_ocr(
                         if exam_id:
                             q_res = (
                                 supabase.table("questions")
-                                .select("id, question_number")
+                                .select("*")
                                 .eq("exam_id", exam_id)
                                 .execute()
                             )
-                            if q_res.data:
-                                for q_row in q_res.data:
-                                    question_mapping[int(q_row["question_number"])] = q_row["id"]
+                            for q_row in q_res.data or []:
+                                if q_row.get("label"):
+                                    question_mapping[q_row["label"].strip().upper()] = q_row["id"]
                 except Exception as q_err:
                     print(f"Note: Could not look up question IDs: {q_err}")
 
-                # Upsert answers into student_answers table
+                # Insert answers into student_answers table, skipping any that match no question
                 for q_key, answer_text in combined_answers.items():
-                    # Parse numerical question number from key (e.g. "Q1" -> 1)
-                    q_num_match = re.search(r"\d+", q_key)
-                    q_num = int(q_num_match.group(0)) if q_num_match else None
-                    question_id = question_mapping.get(q_num) if q_num is not None else None
+                    question_id = question_mapping.get(q_key.strip().upper())
+                    if question_id is None:
+                        print(f"Note: No question with label '{q_key}'; answer not saved")
+                        continue
 
                     upsert_payload = {
                         "answer_sheet_id": answer_sheet_id,
                         "question_id": question_id,
                         "ocr_text": answer_text,
-                        "ocr_confidence": overall_confidence,
+                        "ocr_confidence": answer_confidences.get(q_key, overall_confidence),
                     }
 
                     supabase.table("student_answers").upsert(upsert_payload).execute()
@@ -371,6 +386,7 @@ async def process_ocr(
             "engine": engine_used,
             "ocr_confidence": overall_confidence,
             "answers": combined_answers,
+            "answer_confidences": {k: round(v, 4) for k, v in answer_confidences.items()},
         }
 
     except Exception as err:

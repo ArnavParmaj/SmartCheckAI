@@ -37,7 +37,7 @@ export default function DashboardView() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-headline-lg-mobile md:text-headline-lg font-bold text-on-surface">Dashboard</h1>
-          <p className="text-body-sm text-on-surface-variant mt-0.5">Welcome back! Here's an overview of your exams.</p>
+          <p className="text-body-sm text-on-surface-variant mt-0.5">Welcome back! Here&apos;s an overview of your exams.</p>
         </div>
         <button onClick={() => navigate('create-exam')} className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add</span>

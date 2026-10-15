@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { mockStudentSubmissions, getStatusColor, getConfidenceClass, getConfidenceLabel } from '../data/mockData';
+import { mockStudentSubmissions, getStatusColor, getConfidenceClass } from '../data/mockData';
+import { needsFacultyReview } from '../lib/grading';
+import { openStudentReports } from '../lib/exportResults';
 
 export default function ExamDetailView() {
-  const { activeExam, navigate, deleteExam, getSubmissionsForExam } = useApp();
+  const { activeExam, navigate, deleteExam, getSubmissionsForExam, showNotification } = useApp();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -14,6 +16,8 @@ export default function ExamDetailView() {
 
   const liveSubs = getSubmissionsForExam ? getSubmissionsForExam(activeExam.id) : [];
   const submissions = liveSubs.length > 0 ? liveSubs : mockStudentSubmissions.filter(s => s.examId === activeExam.id);
+  const graded = submissions.filter(s => s.aiScore !== null && s.aiScore !== undefined);
+  const reviewCount = submissions.reduce((n, s) => n + (s.answers || []).filter(needsFacultyReview).length, 0);
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
@@ -50,7 +54,7 @@ export default function ExamDetailView() {
         {[
           { label: 'Total Students', value: activeExam.totalStudents, icon: 'group' },
           { label: 'Evaluated', value: activeExam.submissionsEvaluated, icon: 'fact_check' },
-          { label: 'Avg Score', value: activeExam.avgScore ? `${activeExam.avgScore}/${activeExam.maxScore}` : '—', icon: 'grade' },
+          { label: 'Avg Score', value: activeExam.avgScore !== null && activeExam.avgScore !== undefined ? `${activeExam.avgScore}%` : '—', icon: 'grade' },
           { label: 'Pending Review', value: activeExam.pendingReview, icon: 'pending_actions' },
         ].map(s => (
           <div key={s.label} className="card p-4 text-center">
@@ -64,12 +68,25 @@ export default function ExamDetailView() {
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2">
         <button onClick={() => navigate('upload-sheets', { exam: activeExam })} className="btn-primary text-sm">
-          <span className="material-symbols-outlined text-[18px]">upload_file</span>
-          Upload Answer Sheets
+          <span className="material-symbols-outlined text-[18px]">grading</span>
+          Evaluate Papers
         </button>
-        <button onClick={() => navigate('ocr-review', { exam: activeExam, submission: submissions[1] })} className="btn-outline text-sm flex items-center gap-1">
-          <span className="material-symbols-outlined text-[18px]">document_scanner</span>
-          OCR Review
+        <button onClick={() => navigate('review-queue', { exam: activeExam })} className="btn-outline text-sm flex items-center gap-1">
+          <span className="material-symbols-outlined text-[18px]">rule</span>
+          Review Queue
+          {reviewCount > 0 && <span className="ml-1 text-[11px] font-bold bg-tertiary-container text-on-tertiary-container rounded-full px-1.5">{reviewCount}</span>}
+        </button>
+        <button onClick={() => navigate('class-analysis', { exam: activeExam })} disabled={graded.length === 0} className="btn-outline text-sm flex items-center gap-1 disabled:opacity-50">
+          <span className="material-symbols-outlined text-[18px]">insights</span>
+          Class Analysis
+        </button>
+        <button
+          onClick={() => openStudentReports(activeExam, graded) || showNotification('Allow pop-ups for this site to download reports.', 'warning')}
+          disabled={graded.length === 0}
+          className="btn-outline text-sm flex items-center gap-1 disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+          All Student Reports
         </button>
       </div>
 
@@ -82,10 +99,10 @@ export default function ExamDetailView() {
           <div className="p-12 text-center text-on-surface-variant">
             <span className="material-symbols-outlined text-[48px] text-outline mb-3 block">inbox</span>
             <p className="text-body-md font-medium text-on-surface mb-1">No submissions yet</p>
-            <p className="text-body-sm">Upload student answer sheets to start AI evaluation.</p>
+            <p className="text-body-sm">Upload student answer sheets and they will be graded against your answer key.</p>
             <button onClick={() => navigate('upload-sheets', { exam: activeExam })} className="btn-primary mt-4 mx-auto">
-              <span className="material-symbols-outlined text-[18px]">upload_file</span>
-              Upload Sheets
+              <span className="material-symbols-outlined text-[18px]">grading</span>
+              Evaluate Papers
             </button>
           </div>
         ) : (
@@ -161,7 +178,7 @@ export default function ExamDetailView() {
               <h3 className="text-headline-sm font-bold text-on-surface">Delete Exam?</h3>
             </div>
             <p className="text-body-sm text-on-surface-variant mb-6">
-              Are you sure you want to permanently delete <strong>"{activeExam.title}"</strong>? All associated questions, rubrics, student answer sheets, and grading records will be deleted from the database. This action cannot be undone.
+              Are you sure you want to permanently delete <strong>&quot;{activeExam.title}&quot;</strong>? All associated questions, rubrics, student answer sheets, and grading records will be deleted from the database. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button

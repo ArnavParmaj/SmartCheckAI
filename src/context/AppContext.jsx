@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { fetchTeacherExams, createExamInDB, deleteExamFromDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB, updateTeacherProfile } from '../lib/api';
+import { fetchTeacherExams, fetchTeacherSubmissions, createExamInDB, deleteExamFromDB, uploadAnswerSheetDB, saveStudentAnswerOCR, saveEvaluationDB, approveAnswerSheetDB, updateTeacherProfile, fetchAuditEvents, saveAuditEvent } from '../lib/api';
+import { gradeAnswers, summarizeSubmission, examStats, encodeEvaluation } from '../lib/grading';
 import { mockExams, mockStudentSubmissions, mockAuditEvents, mockUser } from '../data/mockData';
 
 const AppContext = createContext(null);
@@ -47,8 +48,8 @@ export function AppProvider({ children }) {
           // Fetch exams from real Supabase DB
           const liveExams = await fetchTeacherExams(u.id, false);
           setExams(liveExams);
-          setSubmissions([]);
-          setAuditEvents([]);
+          setSubmissions(await fetchTeacherSubmissions(liveExams));
+          setAuditEvents(await fetchAuditEvents(u.id));
         }
       } catch (err) {
         console.error('Supabase session init error:', err);
@@ -74,6 +75,8 @@ export function AppProvider({ children }) {
         setIsDemo(false);
         const liveExams = await fetchTeacherExams(u.id, false);
         setExams(liveExams);
+        setSubmissions(await fetchTeacherSubmissions(liveExams));
+        setAuditEvents(await fetchAuditEvents(u.id));
       } else if (event === 'SIGNED_OUT') {
         setIsAuthenticated(false);
         setUser(null);
@@ -109,13 +112,13 @@ export function AppProvider({ children }) {
 
       const liveExams = await fetchTeacherExams(u.id, false);
       setExams(liveExams);
-      setSubmissions([]);
-      setAuditEvents([]);
+      setSubmissions(await fetchTeacherSubmissions(liveExams));
+      setAuditEvents(await fetchAuditEvents(u.id));
       showNotification('Signed in with Supabase Auth!', 'success');
       return { success: true };
     }
     return { error: 'Unknown authentication error' };
-  }, []);
+  }, [showNotification]);
 
   // Demo Login (explicit demo button only)
   const demoLogin = useCallback(() => {
@@ -126,7 +129,7 @@ export function AppProvider({ children }) {
     setSubmissions(mockStudentSubmissions);
     setAuditEvents(mockAuditEvents);
     showNotification('Loaded Demo Mode with sample data', 'info');
-  }, []);
+  }, [showNotification]);
 
   // Strict Supabase Auth SignUp
   const signup = useCallback(async (name, email, password) => {
@@ -168,7 +171,7 @@ export function AppProvider({ children }) {
     }
 
     return { error: 'Account creation failed' };
-  }, []);
+  }, [showNotification]);
 
   // Logout
   const logout = useCallback(async () => {
@@ -187,7 +190,7 @@ export function AppProvider({ children }) {
     setAuditEvents([]);
     setCurrentView('dashboard');
     showNotification('Signed out successfully.', 'info');
-  }, [isDemo]);
+  }, [isDemo, showNotification]);
 
   // Navigation
   const navigate = useCallback((view, payload = {}) => {
@@ -195,6 +198,20 @@ export function AppProvider({ children }) {
     if (payload.exam) setActiveExam(payload.exam);
     if (payload.submission) setActiveSubmission(payload.submission);
   }, []);
+
+  // Record an action in the audit trail (kept in Supabase when signed in)
+  const logAudit = useCallback((event) => {
+    const full = {
+      id: `audit-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: new Date().toISOString(),
+      actor: user?.name || 'Teacher',
+      actorType: 'teacher',
+      severity: 'info',
+      ...event,
+    };
+    setAuditEvents(prev => [full, ...prev]);
+    if (!isDemo && user?.id) saveAuditEvent(user.id, full);
+  }, [user, isDemo]);
 
   // Override AI score
   const overrideScore = useCallback(async (submissionId, questionId, newScore, teacherNote) => {
@@ -204,57 +221,51 @@ export function AppProvider({ children }) {
         if (ans.questionId !== questionId) return ans;
         return { ...ans, teacherScore: newScore, teacherNote, isOverridden: true };
       });
-      const totalScore = updatedAnswers.reduce((sum, ans) => sum + (ans.teacherScore !== null ? ans.teacherScore : ans.aiScore), 0);
-      return { ...sub, answers: updatedAnswers, totalScore };
+      return summarizeSubmission({ ...sub, answers: updatedAnswers });
     }));
 
-    if (!isDemo) {
-      await saveEvaluationDB(questionId, newScore, 95, teacherNote, false);
+    const sub = submissions.find(s => s.id === submissionId);
+    const studentAnswerId = sub?.answers.find(a => a.questionId === questionId)?.studentAnswerId;
+    if (!isDemo && studentAnswerId) {
+      await saveEvaluationDB(studentAnswerId, newScore, 100, encodeEvaluation('teacher', { note: teacherNote }), false);
     }
 
-    const sub = submissions.find(s => s.id === submissionId);
-    const newEvent = {
-      id: `audit-${Date.now()}`,
-      timestamp: new Date().toISOString(),
+    const ans = sub?.answers.find(a => a.questionId === questionId);
+    logAudit({
       event: 'Teacher Score Override',
-      actor: user?.name || 'Teacher',
-      actorType: 'teacher',
       examTitle: exams.find(e => e.id === sub?.examId)?.title || 'Unknown Exam',
-      detail: `Modified score for question. Note: ${teacherNote}`,
+      detail: `${sub?.studentName} ${ans?.questionLabel || ''}: AI ${ans?.aiScore ?? '-'} → ${newScore}/${ans?.maxMarks}.${teacherNote ? ` Note: ${teacherNote}` : ''}`,
       examId: sub?.examId,
       severity: 'warning',
-    };
-    setAuditEvents(prev => [newEvent, ...prev]);
+    });
     showNotification(isDemo ? 'Score updated' : 'Score updated in Supabase!', 'success');
-  }, [submissions, user, exams, isDemo]);
+  }, [submissions, exams, isDemo, showNotification, logAudit]);
 
   // Approve submission
-  const approveSubmission = useCallback((submissionId) => {
+  const approveSubmission = useCallback(async (submissionId) => {
     setSubmissions(prev => prev.map(sub => {
       if (sub.id !== submissionId) return sub;
       const finalAnswers = sub.answers.map(ans => ({
         ...ans,
-        teacherScore: ans.teacherScore !== null ? ans.teacherScore : ans.aiScore,
+        teacherScore: ans.teacherScore !== null && ans.teacherScore !== undefined ? ans.teacherScore : ans.aiScore,
       }));
-      const totalScore = finalAnswers.reduce((sum, ans) => sum + ans.teacherScore, 0);
-      return { ...sub, status: 'Approved', teacherApproved: true, answers: finalAnswers, totalScore };
+      return summarizeSubmission({ ...sub, teacherApproved: true, answers: finalAnswers });
     }));
 
     const sub = submissions.find(s => s.id === submissionId);
-    const newEvent = {
-      id: `audit-${Date.now()}`,
-      timestamp: new Date().toISOString(),
+    if (!isDemo && sub?.answerSheetId) {
+      const { error } = await approveAnswerSheetDB(sub.answerSheetId);
+      if (error) showNotification('Approved here, but could not save approval to Supabase', 'warning');
+    }
+    logAudit({
       event: 'Evaluation Approved',
-      actor: user?.name || 'Teacher',
-      actorType: 'teacher',
       examTitle: exams.find(e => e.id === sub?.examId)?.title || 'Unknown Exam',
       detail: `Approved evaluation for ${sub?.studentName}.`,
       examId: sub?.examId,
       severity: 'success',
-    };
-    setAuditEvents(prev => [newEvent, ...prev]);
+    });
     showNotification('Evaluation approved and finalized!', 'success');
-  }, [submissions, user, exams]);
+  }, [submissions, exams, isDemo, showNotification, logAudit]);
 
   // Update OCR text
   const updateOcrText = useCallback(async (submissionId, questionId, newText) => {
@@ -269,12 +280,41 @@ export function AppProvider({ children }) {
       };
     }));
 
-    if (!isDemo) {
-      await saveStudentAnswerOCR(submissionId, questionId, newText);
+    const sub = submissions.find(s => s.id === submissionId);
+    const ans = sub?.answers.find(a => a.questionId === questionId);
+    if (!isDemo && sub?.answerSheetId && ans?.studentAnswerId) {
+      await saveStudentAnswerOCR(sub.answerSheetId, questionId, newText, null, ans.studentAnswerId);
     }
-
     showNotification(isDemo ? 'OCR text updated' : 'OCR text updated in Supabase!', 'success');
-  }, [isDemo]);
+    logAudit({
+      event: 'OCR Text Corrected',
+      examTitle: exams.find(e => e.id === sub?.examId)?.title || 'Unknown Exam',
+      detail: `${sub?.studentName} ${ans?.questionLabel || ''}: transcription edited; answer re-graded.`,
+      examId: sub?.examId,
+    });
+
+    // The corrected text changes the grade, so re-grade this answer
+    if (!ans) return;
+    try {
+      const examQuestions = exams.find(e => e.id === sub.examId)?.questions || [];
+      const [regraded] = await gradeAnswers([{ ...ans, ocrText: newText }], examQuestions);
+      setSubmissions(prev => prev.map(s => {
+        if (s.id !== submissionId) return s;
+        return summarizeSubmission({
+          ...s,
+          answers: s.answers.map(a => (a.questionId === questionId ? { ...regraded, teacherScore: a.teacherScore, teacherNote: a.teacherNote } : a)),
+        });
+      }));
+      if (!isDemo && ans.studentAnswerId && regraded.aiScore !== null) {
+        await saveEvaluationDB(ans.studentAnswerId, regraded.aiScore, regraded.aiConfidence, encodeEvaluation('ai', {
+          rationale: regraded.aiRationale, feedback: regraded.aiFeedback, conceptsMissed: regraded.conceptsMissed,
+        }), regraded.needsReview);
+      }
+    } catch (err) {
+      console.error('Re-grading failed:', err);
+      showNotification('Could not re-grade this answer (is the backend running?)', 'warning');
+    }
+  }, [isDemo, submissions, exams, showNotification, logAudit]);
 
   // Create exam
   const createExam = useCallback(async (examData) => {
@@ -294,10 +334,14 @@ export function AppProvider({ children }) {
     } else {
       const created = await createExamInDB(examData, user?.id);
       setExams(prev => [created, ...prev]);
+      logAudit({ event: 'Exam Created', examId: created.id, examTitle: created.title, detail: `${created.questions?.length || 0} question(s).` });
+      if (created.knowledgeNotSaved) {
+        showNotification('Model answers saved, but your criteria edits need database migration 004 to be kept after a refresh.', 'warning');
+      }
       showNotification('Exam created & saved in Supabase!', 'success');
       return created;
     }
-  }, [user, isDemo, showNotification]);
+  }, [user, isDemo, showNotification, logAudit]);
 
   // Delete exam
   const deleteExam = useCallback(async (examId) => {
@@ -305,6 +349,7 @@ export function AppProvider({ children }) {
       if (!isDemo) {
         await deleteExamFromDB(examId);
       }
+      logAudit({ event: 'Exam Deleted', examTitle: exams.find(e => e.id === examId)?.title, detail: 'Exam and all its answer sheets and grades were deleted.', severity: 'error' });
       setExams(prev => prev.filter(e => e.id !== examId));
       setSubmissions(prev => prev.filter(s => s.examId !== examId));
       if (activeExam?.id === examId) {
@@ -318,7 +363,7 @@ export function AppProvider({ children }) {
       showNotification('Failed to delete exam: ' + err.message, 'error');
       return { error: err.message };
     }
-  }, [isDemo, activeExam, navigate, showNotification]);
+  }, [isDemo, activeExam, navigate, showNotification, exams, logAudit]);
 
   // Toggle dark mode
   const toggleDark = useCallback(() => {
@@ -352,7 +397,7 @@ export function AppProvider({ children }) {
     if (profileData.email) dbData.email = profileData.email;
     if (profileData.school) dbData.institution = profileData.school;
     
-    const { data, error } = await updateTeacherProfile(user.id, dbData);
+    const { error } = await updateTeacherProfile(user.id, dbData);
     if (error) {
       showNotification('Failed to update profile', 'error');
       return { error };
@@ -368,12 +413,21 @@ export function AppProvider({ children }) {
     setSubmissions(prev => [newSubmission, ...prev]);
   }, []);
 
+  // Exam stats come from the real submissions; active objects are re-resolved so
+  // views see updates (re-grades, overrides) made after they were opened
+  const examsWithStats = useMemo(
+    () => (isDemo ? exams : exams.map(e => examStats(e, submissions))),
+    [exams, submissions, isDemo]
+  );
+  const liveActiveExam = examsWithStats.find(e => e.id === activeExam?.id) || activeExam;
+  const liveActiveSubmission = submissions.find(s => s.id === activeSubmission?.id) || activeSubmission;
+
   const value = {
     isAuthenticated, user, isDemo, loading, login, demoLogin, signup, logout,
-    currentView, navigate, activeExam, setActiveExam, activeSubmission, setActiveSubmission,
-    exams, submissions, auditEvents,
+    currentView, navigate, activeExam: liveActiveExam, setActiveExam, activeSubmission: liveActiveSubmission, setActiveSubmission,
+    exams: examsWithStats, submissions, auditEvents,
     overrideScore, approveSubmission, updateOcrText, createExam, deleteExam, uploadAnswerSheetDB, addSubmission,
-    getSubmissionsForExam, updateUserProfile,
+    getSubmissionsForExam, updateUserProfile, logAudit,
     isDark, toggleDark,
     notification, showNotification,
     sidebarOpen, setSidebarOpen,
@@ -382,6 +436,7 @@ export function AppProvider({ children }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook belongs with its provider
 export const useApp = () => {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp must be used inside AppProvider');

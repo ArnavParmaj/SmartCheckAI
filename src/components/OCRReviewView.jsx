@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { getConfidenceClass } from '../data/mockData';
 
-export default function OCRReviewView() {
-  const { activeSubmission, activeExam, navigate, updateOcrText, showNotification } = useApp();
-
-  if (!activeSubmission) { navigate('exams'); return null; }
+function OCRReviewViewContent() {
+  const { activeSubmission, activeExam, navigate, updateOcrText } = useApp();
 
   const [editingId, setEditingId] = useState(null);
   const [editTexts, setEditTexts] = useState(
@@ -21,17 +19,6 @@ export default function OCRReviewView() {
     setEditingId(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
-
-  // Simulate low-confidence words
-  const highlightLowConfidence = (text, confidence) => {
-    if (confidence >= 90) return text;
-    // Highlight every 5th word as "low confidence" for demo
-    const words = text.split(' ');
-    return words.map((word, i) => ({
-      word,
-      isLowConfidence: i % 7 === 3 || i % 11 === 5,
-    }));
   };
 
   return (
@@ -193,4 +180,16 @@ export default function OCRReviewView() {
       )}
     </div>
   );
+}
+
+// Render the screen only once a submission is selected, so its hooks always run
+export default function OCRReviewView() {
+  const { activeSubmission, navigate } = useApp();
+
+  useEffect(() => {
+    if (!activeSubmission) navigate('exams');
+  }, [activeSubmission, navigate]);
+
+  if (!activeSubmission) return null;
+  return <OCRReviewViewContent key={activeSubmission.id} />;
 }

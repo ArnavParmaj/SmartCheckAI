@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { getConfidenceClass, getConfidenceLabel } from '../data/mockData';
+import { needsFacultyReview } from '../lib/grading';
+import { openStudentReports } from '../lib/exportResults';
 
-export default function ReviewApproveView() {
-  const { activeSubmission, activeExam, navigate, overrideScore, approveSubmission } = useApp();
+const STATUS_STYLE = {
+  met: { icon: 'check_circle', color: 'text-secondary', label: 'Met' },
+  partial: { icon: 'contrast', color: 'text-tertiary-container', label: 'Partly met' },
+  missed: { icon: 'cancel', color: 'text-error', label: 'Missed' },
+};
 
-  if (!activeSubmission) { navigate('exams'); return null; }
+function ReviewApproveViewContent() {
+  const { activeSubmission, activeExam, navigate, overrideScore, approveSubmission, showNotification } = useApp();
+  const modelAnswerFor = (questionId) => activeExam?.questions?.find(q => q.id === questionId)?.modelAnswer || '';
 
   const [overrides, setOverrides] = useState(
     Object.fromEntries(activeSubmission.answers.map(a => [a.questionId, {
@@ -20,17 +27,17 @@ export default function ReviewApproveView() {
 
   const totalTeacher = activeSubmission.answers.reduce((sum, ans) => {
     const ov = overrides[ans.questionId];
-    return sum + (ov ? parseInt(ov.score) || 0 : ans.aiScore);
+    return sum + (ov ? parseFloat(ov.score) || 0 : (ans.aiScore || 0));
   }, 0);
 
   const hasChanges = activeSubmission.answers.some(ans => {
     const ov = overrides[ans.questionId];
-    return ov && parseInt(ov.score) !== ans.aiScore;
+    return ov && parseFloat(ov.score) !== ans.aiScore;
   });
 
   const handleOverrideSave = (questionId) => {
     const ov = overrides[questionId];
-    overrideScore(activeSubmission.id, questionId, parseInt(ov.score), ov.note);
+    overrideScore(activeSubmission.id, questionId, parseFloat(ov.score), ov.note);
     setOverrides(prev => ({ ...prev, [questionId]: { ...prev[questionId], editing: false } }));
   };
 
@@ -50,9 +57,21 @@ export default function ReviewApproveView() {
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </button>
         <div className="flex-1">
-          <h1 className="text-headline-md font-bold text-on-surface">Review & Approve</h1>
-          <p className="text-body-sm text-on-surface-variant">{activeSubmission.studentName} ({activeSubmission.rollNumber}) · {activeExam?.title}</p>
+          <h1 className="text-headline-md font-bold text-on-surface">Evaluation Report</h1>
+          <p className="text-body-sm text-on-surface-variant">
+            {activeSubmission.studentName} ({activeSubmission.rollNumber}) · {activeExam?.title}
+            {activeSubmission.fileUrl && (
+              <> · <a href={activeSubmission.fileUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">View original sheet</a></>
+            )}
+          </p>
         </div>
+        <button
+          onClick={() => openStudentReports(activeExam, [activeSubmission]) || showNotification('Allow pop-ups for this site to download the report.', 'warning')}
+          className="btn-outline text-sm flex items-center gap-1"
+        >
+          <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+          PDF
+        </button>
         {approved ? (
           <div className="flex items-center gap-2 bg-secondary-fixed border border-secondary px-3 py-1.5 rounded-lg">
             <span className="material-symbols-outlined text-secondary text-[18px]">verified</span>
@@ -99,7 +118,7 @@ export default function ReviewApproveView() {
             <div className="text-center">
               <p className="text-label-sm text-on-surface-variant">Overrides</p>
               <p className={`text-headline-md font-bold ${hasChanges ? 'text-tertiary-container' : 'text-on-surface-variant'}`}>
-                {activeSubmission.answers.filter(a => overrides[a.questionId] && parseInt(overrides[a.questionId].score) !== a.aiScore).length}
+                {activeSubmission.answers.filter(a => overrides[a.questionId] && parseFloat(overrides[a.questionId].score) !== a.aiScore).length}
               </p>
             </div>
           </div>
@@ -110,7 +129,7 @@ export default function ReviewApproveView() {
       <div className="flex flex-col gap-4">
         {activeSubmission.answers.map((ans, index) => {
           const ov = overrides[ans.questionId];
-          const isOverridden = ov && parseInt(ov.score) !== ans.aiScore;
+          const isOverridden = ov && parseFloat(ov.score) !== ans.aiScore;
 
           return (
             <div key={ans.questionId} className={`card overflow-hidden ${isOverridden ? 'ring-2 ring-tertiary-fixed-dim' : ''}`}>
@@ -126,18 +145,38 @@ export default function ReviewApproveView() {
               </div>
 
               <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* Student answer */}
-                <div>
-                  <p className="text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Student's Answer (OCR)</p>
-                  <div className="bg-surface-container-low rounded-lg p-3 text-body-sm text-on-surface border border-outline-variant">
-                    {ans.ocrText}
+                {/* Student answer next to the faculty model answer */}
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-label-sm text-on-surface-variant uppercase tracking-wider mb-2 flex items-center gap-2">
+                      Student&apos;s Answer (read from handwriting)
+                      {ans.ocrConfidence !== null && ans.ocrConfidence !== undefined && ans.ocrConfidence < 0.8 && (
+                        <span className="badge-review normal-case tracking-normal">Hard to read</span>
+                      )}
+                    </p>
+                    <div className="bg-surface-container-low rounded-lg p-3 text-body-sm text-on-surface border border-outline-variant whitespace-pre-wrap">
+                      {ans.ocrText || <span className="italic text-on-surface-variant">No answer written</span>}
+                    </div>
                   </div>
+                  {modelAnswerFor(ans.questionId) && (
+                    <details className="group">
+                      <summary className="text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer select-none">
+                        Faculty model answer
+                      </summary>
+                      <div className="mt-2 bg-secondary-fixed/20 rounded-lg p-3 text-body-sm text-on-surface border border-secondary-fixed whitespace-pre-wrap">
+                        {modelAnswerFor(ans.questionId)}
+                      </div>
+                    </details>
+                  )}
                 </div>
 
                 {/* AI Evaluation */}
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">AI Evaluation</p>
+                    <p className="text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+                      AI Evaluation
+                      {needsFacultyReview(ans) && <span className="badge-review normal-case tracking-normal">Check this</span>}
+                    </p>
                     <span className={getConfidenceClass(ans.aiConfidence)}>{ans.aiConfidence}% — {getConfidenceLabel(ans.aiConfidence)}</span>
                   </div>
 
@@ -159,6 +198,7 @@ export default function ReviewApproveView() {
                           value={ov.score}
                           min={0}
                           max={ans.maxMarks}
+                          step={0.5}
                           onChange={e => setOverrides(prev => ({ ...prev, [ans.questionId]: { ...prev[ans.questionId], score: e.target.value } }))}
                           className="w-full text-headline-md font-bold border border-primary rounded px-1 py-0"
                         />
@@ -172,9 +212,37 @@ export default function ReviewApproveView() {
                     </div>
                   </div>
 
+                  {/* Why this score: criterion by criterion */}
+                  {ans.aiCriteria?.length > 0 && (
+                    <div className="rounded-lg border border-outline-variant overflow-hidden">
+                      <p className="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider px-3 py-2 bg-surface-bright border-b border-outline-variant">
+                        Marks by criterion
+                      </p>
+                      <ul className="divide-y divide-outline-variant">
+                        {ans.aiCriteria.map(c => (
+                          <li key={c.criterion} className="px-3 py-2 flex items-start gap-2">
+                            <span
+                              className={`material-symbols-outlined text-[18px] flex-shrink-0 ${STATUS_STYLE[c.status]?.color || 'text-outline'}`}
+                              aria-label={STATUS_STYLE[c.status]?.label}
+                            >
+                              {STATUS_STYLE[c.status]?.icon || 'help'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline justify-between gap-2">
+                                <p className="text-label-md font-semibold text-on-surface">{c.criterion}</p>
+                                <p className="text-label-md font-bold text-on-surface flex-shrink-0">{c.marks_awarded}/{c.marks}</p>
+                              </div>
+                              <p className="text-body-sm text-on-surface-variant">{c.reason}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* AI rationale & actions */}
                   <div className="bg-primary-fixed/20 rounded-lg p-3 border border-primary-fixed">
-                    <p className="text-[11px] text-primary font-semibold uppercase tracking-wider mb-1">AI Rationale</p>
+                    <p className="text-[11px] text-primary font-semibold uppercase tracking-wider mb-1">Why this score</p>
                     <p className="text-body-sm text-on-surface">{ans.aiRationale}</p>
                     <button
                       onClick={() => setShowFeedback(ans)}
@@ -247,8 +315,18 @@ export default function ReviewApproveView() {
                 <p className="text-body-md text-on-surface leading-relaxed">{showFeedback.aiRationale}</p>
               </div>
 
+              {showFeedback.aiFeedback && (
+                <div className="bg-secondary-fixed/30 rounded-xl p-4 border border-secondary-fixed">
+                  <p className="text-label-sm font-semibold text-secondary uppercase tracking-wider mb-2">Feedback for Student</p>
+                  <p className="text-body-md text-on-surface leading-relaxed">{showFeedback.aiFeedback}</p>
+                  {showFeedback.conceptsMissed?.length > 0 && (
+                    <p className="text-body-sm text-on-surface-variant mt-2">Missing: {showFeedback.conceptsMissed.join(', ')}</p>
+                  )}
+                </div>
+              )}
+
               <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant">
-                <p className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Student's OCR Answer</p>
+                <p className="text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Student&apos;s OCR Answer</p>
                 <p className="text-body-sm text-on-surface">{showFeedback.ocrText}</p>
               </div>
             </div>
@@ -260,4 +338,16 @@ export default function ReviewApproveView() {
       )}
     </div>
   );
+}
+
+// Render the screen only once a submission is selected, so its hooks always run
+export default function ReviewApproveView() {
+  const { activeSubmission, navigate } = useApp();
+
+  useEffect(() => {
+    if (!activeSubmission) navigate('exams');
+  }, [activeSubmission, navigate]);
+
+  if (!activeSubmission) return null;
+  return <ReviewApproveViewContent key={activeSubmission.id} />;
 }
