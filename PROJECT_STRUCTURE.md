@@ -1,241 +1,231 @@
 # SmartCheck AI — Project Structure & Architectural Reference
 
-> **Purpose:** This document provides a complete, granular architectural map and reference of the SmartCheck AI codebase for LLMs, developers, and autonomous agents.
+> **Purpose:** This document provides a comprehensive, granular architectural map and reference of the complete SmartCheck AI codebase for LLMs, developers, and autonomous agents.
 
 ---
 
-## 1. High-Level Overview
+## 1. High-Level System Architecture
 
-**SmartCheck AI** is an AI-assisted paper grading and exam evaluation platform tailored for teachers and educational institutions. It facilitates OCR extraction from handwritten student answer sheets, automated rubric-based grading with confidence scoring, teacher-in-the-loop review and manual score overrides, audit logging, and reporting.
+**SmartCheck AI** is a dual-tier (React SPA + FastAPI Backend) agentic AI system for automated evaluation of handwritten student answer sheets. It combines local neural NLP models with Google Gemini Vision models to achieve high accuracy while providing teachers with confidence scores, transparent criterion-level grading rationale, and a human-in-the-loop review queue.
 
-### Core Stack
-- **Framework / UI:** React 18 (Vite 5 Single-Page Application, JavaScript JSX)
-- **Styling:** Tailwind CSS 3.4 + PostCSS + Autoprefixer + Custom CSS Variables
-- **Icons:** `lucide-react`
-- **Backend / Database / Storage:** Supabase (`@supabase/supabase-js` v2)
-  - **Auth:** Supabase Auth (`signInWithPassword`, `signUp`, `signOut`, session listener)
-  - **Database:** PostgreSQL (Tables: `teachers`, `exams`, `questions`, `answer_keys`, `answer_sheets`, `student_answers`, `evaluations`)
-  - **Storage:** Supabase Storage Bucket (`answer-sheets`)
-- **State Management:** React Context API (`AppContext`) with dual-mode support (Live Supabase DB vs. In-Memory Demo Mode)
+```
+                      ┌───────────────────────────────────────┐
+                      │        Teacher / Web Browser          │
+                      │  React 18 + Vite + Tailwind CSS SPA   │
+                      │        (http://localhost:5173)        │
+                      └──────────────┬──────────────────┬─────┘
+                                     │                  │
+                Client Supabase SDK  │                  │ REST API Calls
+             (Auth, Tables, Storage) │                  │ (OCR, Grading, KB)
+                                     ▼                  ▼
+                    ┌──────────────────┐    ┌────────────────────────────────────────┐
+                    │  Supabase Cloud  │    │            FastAPI Backend             │
+                    │  - PostgreSQL    │    │        (http://127.0.0.1:8000)         │
+                    │  - Auth (JWT)    │    ├────────────────────────────────────────┤
+                    │  - Storage Bucket│    │ - /ocr/*                               │
+                    │    'answer-sheets│    │ - /knowledge/build & /rebuild          │
+                    └──────────────────┘    │ - /evaluation/evaluate                 │
+                                            │ - /concepts/extract                    │
+                                            │ - /feedback/generate                   │
+                                            └──────────────────┬─────────────────────┘
+                                                               │ Orchestrates
+                                                               ▼
+                             ┌────────────────────────────────────────────────────────┐
+                             │                  AI Agent Pipeline                     │
+                             ├────────────────────────────────────────────────────────┤
+                             │ 1. OCR Agent (Gemini 3.5 Flash + RapidOCR ONNX)        │
+                             │ 2. Concept Agent (Answer Key Parser + Knowledge Builder│
+                             │ 3. Evaluation Agent (all-MiniLM-L6-v2 + Gemini Scorer) │
+                             │ 4. Feedback Agent (Criterion Justifications)           │
+                             └────────────────────────────────────────────────────────┘
+```
+
+### Technology Stack
+- **Frontend:** React 18, Vite 5, Tailwind CSS 3.4, PostCSS, `lucide-react`, ESLint 8.
+- **Backend Server:** FastAPI, Uvicorn, Python 3.11 (`backend/venv`).
+- **Database & Storage:** Supabase PostgreSQL with Row Level Security (RLS), Supabase Storage (`answer-sheets` bucket).
+- **Local Machine Learning / NLP:**
+  - `sentence-transformers/all-MiniLM-L6-v2` for semantic similarity & concept coverage.
+  - `KeyBERT` for keyword extraction.
+  - `rapidocr-onnxruntime` + `paddleocr` for fallback OCR.
+  - `PyMuPDF` (fitz) & `python-docx` for document parsing.
+- **Cloud LLM / Multimodal Vision:** Google Gemini REST API (`gemini-3.5-flash` for vision/handwriting OCR, `gemini-flash-lite-latest` for text tasks).
 
 ---
 
 ## 2. Directory Tree Map
 
 ```
-SmartCheck AI/
-├── .env.local                     # Supabase URL & Anon Key config
-├── .gitignore                     # Git ignore rules (node_modules, dist, logs, etc.)
-├── index.html                     # HTML root entrypoint (Google Fonts: Inter, JetBrains Mono)
-├── package.json                   # Project dependencies and npm scripts
-├── package-lock.json              # Dependency lockfile
-├── postcss.config.js              # PostCSS plugins configuration
-├── tailwind.config.js             # Tailwind CSS theme configuration (custom colors, fonts, shadows)
-├── vite.config.js                 # Vite configuration with @vitejs/plugin-react
-├── start.sh                       # Background dev server launch script (logs to dev.log, saves .pid)
-├── stop.sh                        # Process termination script (reads .pid or kills Vite process)
-├── dev.log                        # Dev server runtime logs (auto-generated)
-├── skills-lock.json               # Skill plugin lockfile
+SmartCheckAI/
+├── .env.local                          # Frontend Supabase URL & Anon Key config
+├── .eslintrc.cjs                       # ESLint configuration (React, hooks, refresh)
+├── .gitignore                          # Git ignore rules (node_modules, venv, .env, pid)
+├── index.html                          # HTML entrypoint (Inter, JetBrains Mono fonts)
+├── package.json                        # Frontend dependencies & npm scripts
+├── package-lock.json                   # NPM lockfile
+├── postcss.config.js                   # PostCSS Tailwind config
+├── tailwind.config.js                  # Tailwind theme tokens & color definitions
+├── vite.config.js                      # Vite React plugin configuration
+├── start.sh                            # Launches FastAPI (:8000) + Vite (:5173) in background
+├── stop.sh                             # Gracefully terminates backend and frontend processes
+├── backend.log                         # FastAPI stdout/stderr logs (auto-generated)
+├── frontend.log                        # Vite stdout/stderr logs (auto-generated)
+├── PROJECT_PROGRESS_REPORT.md          # Comprehensive progress and milestone report
+├── PROJECT_STRUCTURE.md                # This architectural reference file
 │
-├── src/
-│   ├── main.jsx                   # React root hydration and Provider mounting
-│   ├── App.jsx                    # View router shell & authentication gate
-│   ├── index.css                  # Global styles, Tailwind directives, dark mode & font tokens
+├── agents/                             # Python AI Agents Module
+│   ├── ocr_agent/                      # Document transcription & vision OCR
+│   │   ├── gemini_ocr.py               # Gemini 3.5 Flash Vision OCR with question splitting
+│   │   ├── ocr.py                      # RapidOCR ONNX local fallback engine
+│   │   ├── preprocessing.py            # Image deskewing, grayscale & contrast adjustments
+│   │   └── segmentation.py             # Sub-question bounding box & label segmentation
 │   │
-│   ├── context/
-│   │   └── AppContext.jsx         # Central React Context Provider (state, auth, CRUD, dark mode)
+│   ├── concept_agent/                  # Answer key parsing & knowledge base extraction
+│   │   ├── answer_key.py               # Multi-format (PDF/DOCX/TXT) question-labeled text extractor
+│   │   ├── knowledge_builder.py        # Links answer key points to rubric criteria with weights
+│   │   ├── knowledge_base.py           # In-memory and cached knowledge store
+│   │   └── concept_extractor.py        # KeyBERT concept/keyword extraction fallback
 │   │
-│   ├── data/
-│   │   └── mockData.js            # Sample data fixtures for Demo Mode (exams, submissions, audit logs)
+│   ├── evaluation_agent/               # Multi-criteria scoring & confidence evaluation
+│   │   ├── scorer.py                   # Hybrid criterion-wise scorer (local embeddings + Gemini)
+│   │   ├── concept_matcher.py          # Sentence-transformer cosine similarity matcher
+│   │   ├── semantic_matcher.py         # Rubric-to-answer semantic alignment engine
+│   │   └── confidence.py               # Aggregated confidence score & review queue flagger
 │   │
-│   ├── lib/
-│   │   ├── api.js                 # Supabase DB & Storage CRUD interface layer
-│   │   └── supabaseClient.js      # Supabase Client instantiation with fallback credentials
+│   └── feedback_agent/                 # Constructive student & teacher feedback synthesis
+│       └── feedback_generator.py       # Criterion "Covered/Missed" justifications & suggestions
+│
+├── backend/                            # FastAPI Server Application
+│   ├── main.py                         # Application entrypoint, CORS setup, router mounts, /health
+│   ├── requirements.txt                # Python dependencies (123 packages installed in venv)
+│   ├── .env                            # Backend Supabase URL, Key & GEMINI_API_KEY
 │   │
-│   └── components/
-│       ├── AuthView.jsx           # Sign-In, Sign-Up & Demo Mode entry screen
-│       ├── Sidebar.jsx            # Desktop & mobile navigation drawer
-│       ├── TopBar.jsx             # Header bar with search, dark mode toggle & user menu
-│       ├── Toast.jsx              # Global notification toast popups
-│       ├── DashboardView.jsx      # Metrics overview, quick actions & recent exams
-│       ├── ExamsView.jsx          # Filterable exams list with status filters
-│       ├── ExamDetailView.jsx     # Exam overview, questions, rubrics & submission list
-│       ├── CreateExamWizard.jsx   # 4-step wizard (Details -> Upload -> AI Processing -> Ready)
-│       ├── OCRReviewView.jsx      # Split-view OCR text inspection & inline editing
-│       ├── ReviewApproveView.jsx  # AI grading review, rubric breakdown, override & approval
-│       ├── ResultsView.jsx        # Class performance analytics & question difficulty stats
-│       ├── AuditTrailView.jsx     # Chronological log of overrides, approvals & actions
-│       ├── ExportView.jsx         # Export reports (CSV, PDF, Excel) & summary tables
-│       ├── ProfileView.jsx        # Teacher profile & institutional settings
-│       └── generated_profile.html # Static reference mockup for profile view
+│   ├── config/
+│   │   └── supabase_client.py          # Supabase client instantiation for backend tasks
+│   │
+│   ├── migrations/                     # PostgreSQL Migrations (Verified in Supabase)
+│   │   ├── 001_add_question_label.sql  # Adds 'label' to questions table
+│   │   ├── 002_add_answer_sheet_student_fields.sql  # Adds student_name & roll_number
+│   │   ├── 003_create_audit_events.sql # Creates audit_events table with RLS
+│   │   └── 004_add_answer_key_knowledge.sql # Adds rubric_criteria JSONB to answer_keys
+│   │
+│   └── routes/                         # API Route Handlers
+│       ├── ocr_routes.py               # /ocr/image, /ocr/pdf, /ocr/batch endpoints
+│       ├── knowledge_routes.py         # /knowledge/build, /knowledge/rebuild endpoints
+│       ├── evaluation_routes.py        # /evaluation/evaluate (sheet-level batch grading)
+│       ├── concept_routes.py           # /concepts/extract endpoint
+│       └── feedback_routes.py          # /feedback/generate endpoint
+│
+└── src/                                # Frontend React Application
+    ├── main.jsx                        # React root hydration and Provider mounting
+    ├── App.jsx                         # Main view router shell & authentication gate
+    ├── index.css                       # Global CSS, Tailwind base, dark mode tokens
+    │
+    ├── context/
+    │   └── AppContext.jsx              # Global state provider (auth, exams, submissions, audit)
+    │
+    ├── data/
+    │   └── mockData.js                 # In-memory mock datasets for Demo Mode
+    │
+    ├── lib/
+    │   ├── api.js                      # Supabase DB & Storage CRUD interface
+    │   ├── backendApi.js               # Client wrapper for FastAPI backend endpoints
+    │   ├── grading.js                  # Frontend grading math, rounding & badge helpers
+    │   ├── pipeline.js                 # Orchestrates end-to-end evaluation flow
+    │   ├── exportResults.js            # CSV generation & formatted print/PDF layout helpers
+    │   └── supabaseClient.js           # Supabase client instance with fallback
+    │
+    └── components/                     # UI Views & Specialized Subcomponents
+        ├── AuthView.jsx                # Login, Signup, and 1-Click Demo Mode selector
+        ├── Sidebar.jsx                 # Desktop & mobile navigation drawer
+        ├── TopBar.jsx                  # Navigation breadcrumbs, dark mode toggle, search
+        ├── Toast.jsx                   # Notification toast messages
+        ├── ErrorBoundary.jsx           # React UI crash protection wrapper
+        │
+        ├── DashboardView.jsx           # Main stats overview, KPI metrics, recent exams
+        ├── ExamsView.jsx               # Catalog of exams with status filters
+        ├── ExamDetailView.jsx          # Questions, rubrics, and submission roster
+        ├── CreateExamWizard.jsx        # 4-step wizard: Details -> Questions -> Upload -> Ready
+        ├── AnswerKeyStep.jsx           # Wizard step: Answer key upload & text extraction
+        ├── KnowledgeReviewStep.jsx     # Wizard step: Visual rubric criteria & key points editor
+        ├── CriteriaEditor.jsx          # Reusable criterion weights & point mapping widget
+        │
+        ├── EvaluatePapersView.jsx      # Bulk paper upload & live evaluation progress monitor
+        ├── OCRReviewView.jsx           # Split-view image vs. transcription inspector/editor
+        ├── ReviewApproveView.jsx       # Student report card, criterion breakdown, teacher override
+        ├── ReviewQueueView.jsx         # Isolated queue for low-confidence / flagged submissions
+        ├── ClassAnalysisView.jsx       # Question analytics, score distributions, missed concepts
+        ├── ResultsView.jsx             # Class performance overview & grade stats
+        ├── AuditTrailView.jsx          # Chronological log of teacher overrides & actions
+        ├── ExportView.jsx              # Gradebook export (CSV, PDF, Excel)
+        └── ProfileView.jsx             # Teacher settings, school info & grading thresholds
 ```
 
 ---
 
-## 3. Detailed Component Breakdown
+## 3. Agent System Architecture (`agents/`)
 
-### Core & Layout Components
+### 1. OCR Agent (`agents/ocr_agent/`)
+- **Primary:** `gemini_ocr.py` uses Gemini 3.5 Flash Vision. It receives both the answer sheet image/PDF and the list of expected question labels (`Q1(a)`, `Q1(b)`, etc.), transcribing handwritten responses directly partitioned by question.
+- **Fallback:** `ocr.py` utilizes local `rapidocr-onnxruntime` with OpenCV preprocessing (`preprocessing.py` for deskewing, adaptive binarization, and noise suppression).
+- **Confidence:** Emits a character/word-level confidence score ($0.0 - 1.0$) per transcribed answer.
 
-| File | Type | Description | Key State & Responsibilities |
-| :--- | :--- | :--- | :--- |
-| `src/main.jsx` | Root Entry | Mounts `<App />` wrapped in `<AppProvider>`. | Injects global context into React root. |
-| `src/App.jsx` | App Shell / Router | Gatekeeper for authentication and tab switching. | Reads `isAuthenticated` and `currentView` from `useApp()`. Switches between `AuthView` and `AppShell` views. |
-| `src/components/Sidebar.jsx` | Navigation | Left sidebar with view navigation links, active badges, teacher profile footer. | Responsive: Collapsible on mobile, fixed on desktop. Links: Dashboard, Exams, Create Exam, OCR Review, Grading Review, Results, Audit Trail, Export, Settings. |
-| `src/components/TopBar.jsx` | Header | Top navigation bar with breadcrumb trail, global search input, dark mode toggle, notification dropdown, and user menu. | Dispatches `toggleDark`, calls `logout`, handles search filter state. |
-| `src/components/Toast.jsx` | Notification UI | Renders animated toast popups for user feedback. | Listens to `notification` state (`{ message, type: 'info'\|'success'\|'error' }`) with 3s timeout. |
+### 2. Concept Agent (`agents/concept_agent/`)
+- **Answer Key Reader (`answer_key.py`):** Ingests PDF (`fitz`), Word (`docx`), or text files. Uses regular expressions to detect question headers (`Q1(a)`, `Ans 2:`, `1.b)`) and split model answers accordingly. Falls back to Gemini text parsing for unconventional formatting.
+- **Knowledge Builder (`knowledge_builder.py`):** Breaks model answers into atomic concept points and maps them to rubric criteria. Computes credit allocation per key point.
 
----
+### 3. Evaluation Agent (`agents/evaluation_agent/`)
+- **Hybrid Scorer (`scorer.py`):** For each question criterion:
+  1. **Concept Matcher (`concept_matcher.py`):** Compares student answer sentences to answer-key key points using `sentence-transformers/all-MiniLM-L6-v2`. Scores $\ge 0.60$ count as covered; $0.45 - 0.59$ count as partially covered.
+  2. **Semantic Matcher (`semantic_matcher.py`):** Computes holistic semantic alignment between the student answer and the criterion definition.
+  3. **Local Score Calculation:** $0.60 \times \text{Concept Coverage} + 0.40 \times \text{Semantic Match}$, rounded to 0.5 marks.
+  4. **Gemini Second Opinion:** A batched sheet-level LLM call generates an independent score and reasoning. Final criterion score is the average of local and Gemini scores.
+- **Confidence Engine (`confidence.py`):** Combines OCR transcription confidence with inter-model agreement. If confidence $< 0.75$ or local vs. Gemini discrepancy $> 30\%$, the submission is flagged for human review (`needs_review = true`).
 
-### Application Views (`src/components/`)
-
-#### 1. `AuthView.jsx`
-- **Purpose:** User authentication interface.
-- **Features:** 
-  - Dual tabs: "Sign In" and "Sign Up".
-  - One-click "Try Demo Mode" button to explore without Supabase credentials.
-  - Form validation with feedback banners.
-  - Calls `login(email, password)`, `signup(name, email, password)`, or `demoLogin()`.
-
-#### 2. `DashboardView.jsx`
-- **Purpose:** Main landing overview for teachers.
-- **Features:**
-  - KPI Stat Cards: Total Exams, Submissions Evaluated, Pending Review, Average AI Confidence.
-  - Quick Action Buttons: Create New Exam, Upload Answer Sheets, Audit Logs.
-  - Active Exams Table with status tags (`Completed`, `Processing`, `Draft`), evaluation progress bars, and navigation links.
-
-#### 3. `ExamsView.jsx`
-- **Purpose:** Full catalog of all created exams.
-- **Features:**
-  - Search bar and status filters (All, Completed, Processing, Draft).
-  - Cards / Table rows displaying subject, grade, date, total students, evaluated count, and average score.
-  - Quick action to open `ExamDetailView` or delete/archive.
-
-#### 4. `ExamDetailView.jsx`
-- **Purpose:** Single exam management hub.
-- **Features:**
-  - Exam metadata banner (Title, Subject, Total Marks, Date, Status).
-  - Two Tabs:
-    - **Questions & Rubrics:** Lists exam questions, maximum marks, and reference model answer criteria.
-    - **Student Submissions:** Renders student submission list, status badges, total marks, confidence indicator, and direct action buttons ("Review OCR" / "Grade & Approve").
-
-#### 5. `CreateExamWizard.jsx`
-- **Purpose:** Multi-step wizard to create an exam, define questions, and ingest answer sheets.
-- **Steps:**
-  - **Step 1 (Details & Questions):** Exam title, subject, grade, max score, dynamic question builder (question text, marks, rubric/criteria).
-  - **Step 2 (Upload Sheets):** Drag-and-drop file uploader for scanned answer sheets (PDF/JPG/PNG).
-  - **Step 3 (AI Processing):** Animated processing progress bar simulating OCR digitization and AI evaluation.
-  - **Step 4 (Completion):** Confirmation screen with direct navigation to OCR Review or Exam Details.
-
-#### 6. `OCRReviewView.jsx`
-- **Purpose:** Teacher-in-the-loop OCR verification and correction.
-- **Features:**
-  - Split-screen layout: Scanned answer sheet image/document on the left, recognized text on the right.
-  - Confidence indicators per question block.
-  - Inline text editor enabling teachers to fix OCR errors before AI scoring.
-  - Calls `updateOcrText(submissionId, questionId, newText)` which persists to Supabase or local state.
-
-#### 7. `ReviewApproveView.jsx`
-- **Purpose:** AI Grading Review & Human Approval Interface.
-- **Features:**
-  - Per-question breakdown showing:
-    - Student handwritten OCR transcript.
-    - Reference Rubric / Model Answer.
-    - AI Suggested Score & Confidence Score badge (Color-coded: Green $\ge 90\%$, Yellow $75-89\%$, Red $< 75\%$).
-    - AI Explanation & Reasoning bullet points.
-    - Teacher Score Override input field & feedback note.
-  - "Approve & Finalize" action button that marks submission as approved, updates total score, and writes to audit log.
-
-#### 8. `ResultsView.jsx`
-- **Purpose:** Class-wide analytics and performance insights.
-- **Features:**
-  - Grade distribution chart (A, B, C, D, F counts).
-  - Question-by-question difficulty and average score breakdown.
-  - Highest and lowest scoring question identifiers.
-  - Summary metrics: Pass Rate, Class Average, Highest Score.
-
-#### 9. `AuditTrailView.jsx`
-- **Purpose:** Compliance and transparency log.
-- **Features:**
-  - Chronological timeline of all system and user activities.
-  - Categorized events: Teacher Score Overrides, OCR Edits, Evaluations Approved, Exams Created, Logins.
-  - Displays Timestamp, Actor Name, Actor Role, Exam Title, Severity tag (`info`, `warning`, `success`), and detailed notes.
-
-#### 10. `ExportView.jsx`
-- **Purpose:** Grade report generation and download.
-- **Features:**
-  - Export options: CSV (Spreadsheet), PDF (Grade Sheets), Excel format simulation.
-  - Filter by Exam, Grade, and Approval status.
-  - Table preview with export trigger.
-
-#### 11. `ProfileView.jsx`
-- **Purpose:** Teacher account and institutional configuration.
-- **Features:**
-  - Personal Information: Name, Email, Institution/School, Academic Year.
-  - Grading Preferences: AI Confidence threshold for auto-flagging, default grading strictness.
-  - Persistence: Updates Supabase `teachers` table via `updateTeacherProfile()`.
+### 4. Feedback Agent (`agents/feedback_agent/`)
+- Synthesizes clear explanations per criterion:
+  - Highlights covered concepts (e.g., *"Identified Volume, Velocity, Variety"*).
+  - Pinpoints missing concepts (e.g., *"Missed Veracity and Value"*).
+  - Formulates actionable student guidance.
 
 ---
 
-## 4. State Management Architecture (`src/context/AppContext.jsx`)
+## 4. Backend API Endpoints (`backend/routes/`)
 
-The application uses React Context to provide a unified reactive state layer across both **Live Supabase DB** mode and **Demo Mode**.
-
-```mermaid
-graph TD
-    AppProvider[AppContext Provider] --> AppState[Global State: user, exams, submissions, auditEvents, currentView]
-    AppState --> SupabaseSync[Supabase Auth & Database Sync]
-    AppState --> DemoSync[Mock Data In-Memory Fixtures]
-    
-    AppProvider --> Actions[Actions & Mutators]
-    Actions --> login[login / signup / logout]
-    Actions --> demoLogin[demoLogin]
-    Actions --> navigate[navigate view, payload]
-    Actions --> overrideScore[overrideScore]
-    Actions --> approveSubmission[approveSubmission]
-    Actions --> updateOcrText[updateOcrText]
-    Actions --> createExam[createExam]
-    Actions --> updateUserProfile[updateUserProfile]
-    Actions --> toggleDark[toggleDark]
-    Actions --> showNotification[showNotification]
-```
-
-### Key Context State Variables:
-- `isAuthenticated` (`boolean`): Whether user is logged in.
-- `user` (`object`): Active user info (`id`, `name`, `email`, `role`, `school`, `academicYear`).
-- `isDemo` (`boolean`): Flags whether the app is running in Mock Demo Mode vs Live Supabase Mode.
-- `currentView` (`string`): Active navigation route (`'dashboard'`, `'exams'`, `'exam-detail'`, `'create-exam'`, `'ocr-review'`, `'review-approve'`, `'results'`, `'audit'`, `'export'`, `'settings'`).
-- `activeExam` (`object | null`): Currently selected exam for detail/review views.
-- `activeSubmission` (`object | null`): Currently selected submission for grading/OCR review.
-- `exams` (`array`): List of exams.
-- `submissions` (`array`): List of student answer submissions.
-- `auditEvents` (`array`): List of audit log entries.
-- `isDark` (`boolean`): Dark mode state toggling `.dark` class on root `<html>`.
-- `notification` (`object | null`): Active toast notification.
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/health` | Server health check and status verification |
+| `POST` | `/ocr/image` | Runs OCR on single/multi-page image files |
+| `POST` | `/ocr/pdf` | Extracts and performs OCR on PDF documents |
+| `POST` | `/knowledge/build` | Splits answer key document and extracts rubric criteria key points |
+| `POST` | `/knowledge/rebuild` | Recalculates key points for edited model answers |
+| `POST` | `/evaluation/evaluate` | Evaluates complete student submission (local NLP + Gemini batch) |
+| `POST` | `/concepts/extract` | KeyBERT keyword and concept extraction |
+| `POST` | `/feedback/generate` | Generates targeted feedback from covered/missed concept lists |
 
 ---
 
-## 5. API Layer & Database Schema (`src/lib/api.js`)
-
-The `src/lib/api.js` module wraps all Supabase Postgres queries and Storage calls.
-
-### Supabase Table Relationships
+## 5. Database Schema & Tables
 
 ```mermaid
 erDiagram
     TEACHERS ||--o{ EXAMS : creates
+    TEACHERS ||--o{ AUDIT_EVENTS : triggers
     EXAMS ||--o{ QUESTIONS : contains
-    QUESTIONS ||--o| ANSWER_KEYS : has
-    EXAMS ||--o{ ANSWER_SHEETS : contains
+    QUESTIONS ||--o| ANSWER_KEYS : defines
+    EXAMS ||--o{ ANSWER_SHEETS : receives
     ANSWER_SHEETS ||--o{ STUDENT_ANSWERS : contains
     QUESTIONS ||--o{ STUDENT_ANSWERS : answers
-    STUDENT_ANSWERS ||--o| EVALUATIONS : evaluated_by
+    STUDENT_ANSWERS ||--o| EVALUATIONS : assessed_by
 
     TEACHERS {
         uuid id PK
         string name
         string email
         string institution
+        timestamptz created_at
     }
+
     EXAMS {
         uuid id PK
         uuid teacher_id FK
@@ -246,26 +236,32 @@ erDiagram
         date exam_date
         string status
     }
+
     QUESTIONS {
         uuid id PK
         uuid exam_id FK
         int question_number
+        string label "e.g. Q1(a)"
         text question_text
         numeric max_marks
     }
+
     ANSWER_KEYS {
         uuid id PK
         uuid question_id FK
         text model_answer
-        jsonb rubric_criteria
+        jsonb rubric_criteria "Criterion list with key points"
     }
+
     ANSWER_SHEETS {
         uuid id PK
         uuid exam_id FK
-        uuid student_id FK
+        string student_name
+        string roll_number
         string file_url
-        string upload_status
+        string upload_status "uploaded | processed | approved"
     }
+
     STUDENT_ANSWERS {
         uuid id PK
         uuid answer_sheet_id FK
@@ -273,62 +269,83 @@ erDiagram
         text ocr_text
         numeric ocr_confidence
     }
+
     EVALUATIONS {
         uuid id PK
         uuid student_answer_id FK
         numeric marks_awarded
         numeric confidence_score
-        text feedback
+        text feedback "JSON with AI/teacher feedback"
         boolean needs_review
+    }
+
+    AUDIT_EVENTS {
+        uuid id PK
+        uuid teacher_id FK
+        uuid exam_id FK
+        string exam_title
+        string event
+        text detail
+        string actor
+        string actor_type "teacher | system"
+        string severity "info | warning | success | error"
+        timestamptz created_at
     }
 ```
 
-### Exported API Functions in `src/lib/api.js`:
-- `fetchTeacherExams(teacherId, isDemo)`: Fetches exams ordered by creation date from `exams` table.
-- `createExamInDB(examData, teacherId)`: Inserts record into `exams`, `questions`, and `answer_keys`.
-- `uploadAnswerSheetDB(examId, file, studentId)`: Uploads file to Supabase Storage bucket `answer-sheets` and inserts into `answer_sheets` table.
-- `saveStudentAnswerOCR(answerSheetId, questionId, ocrText, ocrConfidence)`: Upserts transcription into `student_answers`.
-- `saveEvaluationDB(studentAnswerId, marksAwarded, confidenceScore, feedback, needsReview)`: Inserts AI evaluation / teacher override into `evaluations`.
-- `updateTeacherProfile(teacherId, profileData)`: Updates teacher details in `teachers` table.
+---
+
+## 6. Frontend Application Views
+
+| View Component | Purpose | Key Capabilities |
+| :--- | :--- | :--- |
+| `AuthView.jsx` | User Access | Email/password sign-in, signup, 1-click Demo Mode. |
+| `DashboardView.jsx` | Overview | KPI metrics cards, active exams progress, quick action buttons. |
+| `ExamsView.jsx` | Exam List | Filterable and searchable catalog of exams with status badges. |
+| `ExamDetailView.jsx` | Exam Hub | View questions, rubrics, and student submission roster. |
+| `CreateExamWizard.jsx` | Setup Wizard | 4-step wizard: Exam Details, Questions & Rubrics, Answer Key, Knowledge Review. |
+| `AnswerKeyStep.jsx` | Key Ingestion | Uploads PDF/DOCX/TXT answer keys, parses into question sections. |
+| `KnowledgeReviewStep.jsx`| Knowledge Base | Interactive review of model answers, criteria weights, and key concepts. |
+| `EvaluatePapersView.jsx` | Bulk Processing | Drag-and-drop batch upload with real-time per-paper grading pipeline progress. |
+| `OCRReviewView.jsx` | OCR Verification | Split-screen visual editor comparing scanned sheet with transcribed text. |
+| `ReviewApproveView.jsx` | Evaluation Report | Detailed student grading report, criterion breakdowns, score overrides, PDF export. |
+| `ReviewQueueView.jsx` | Flagged Review | Focused queue showing only low-confidence or high-discrepancy answers. |
+| `ClassAnalysisView.jsx` | Class Analytics | Question difficulty, score distributions, and most frequently missed concepts. |
+| `ResultsView.jsx` | Summary Stats | Class-wide average scores, pass rates, and grade distribution charts. |
+| `ExportView.jsx` | Gradebook Export | Exports CSV, printable grade sheets, and consolidated PDF reports. |
+| `AuditTrailView.jsx` | Compliance Log | Chronological ledger of all grading runs, score overrides, and approvals. |
+| `ProfileView.jsx` | Teacher Settings | Institutional details, AI confidence threshold controls, grading strictness. |
 
 ---
 
-## 6. Styling & Theme Tokens
+## 7. Operational Scripts & Commands
 
-- **Tailwind Config (`tailwind.config.js`):**
-  - Custom Color Palette:
-    - `primary`: `#2563eb` (Blue-600)
-    - `primary-dark`: `#1d4ed8` (Blue-700)
-    - `accent`: `#8b5cf6` (Purple-500)
-    - `success`: `#10b981` (Emerald-500)
-    - `warning`: `#f59e0b` (Amber-500)
-    - `danger`: `#ef4444` (Red-500)
-    - `background`: CSS variable-based (`hsl(var(--background))`)
-    - `surface`: Dark/light surface containers (`hsl(var(--surface))`)
-  - Typography:
-    - Sans font: Inter, sans-serif
-    - Mono font: JetBrains Mono, monospace
-- **Global CSS (`src/index.css`):**
-  - Includes CSS root variables for light and dark theme styling.
-  - Custom scrollbar styling and glassmorphism helpers (`.glass-panel`).
+```bash
+# Start both FastAPI backend (:8000) and Vite frontend (:5173) in background
+./start.sh
 
----
+# Terminate both servers cleanly
+./stop.sh
 
-## 7. Development & Operational Scripts
+# View live runtime logs
+tail -f frontend.log
+tail -f backend.log
 
-| Script / Command | Purpose |
-| :--- | :--- |
-| `npm run dev` | Runs Vite local development server on `http://localhost:5173`. |
-| `npm run build` | Builds optimized production bundle into `dist/`. |
-| `npm run preview` | Previews production build locally. |
-| `./start.sh` | Launches dev server in the background, writes stdout/stderr to `dev.log`, records PID in `.pid`. |
-| `./stop.sh` | Safely stops background dev server process using `.pid` or port lookup. |
+# Run frontend tests / linting
+npm run lint
+npm run build
+
+# Direct backend manual startup (from project root)
+./backend/venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
 ---
 
-## 8. Guidance for LLMs Modifying this Codebase
+## 8. Development & Architectural Guidelines
 
-1. **Dual Mode Preservation:** When modifying data operations in components or `AppContext`, ensure both **Live Supabase** and **Demo Mode** (`isDemo === true`) branches are handled gracefully without breaking mock workflows.
-2. **View Navigation:** Routing is state-driven via `currentView` in `AppContext.jsx`. Use `navigate('view-name', { exam, submission })` rather than `react-router` URL paths.
-3. **Audit Trail Logging:** Any critical teacher action (score overrides, OCR text edits, approvals) should create an event and append to `auditEvents` via `AppContext.jsx`.
-4. **Supabase Schema Consistency:** Keep column names aligned with `api.js` snake_case database schema (`teacher_id`, `total_marks`, `ocr_text`, `marks_awarded`, etc.).
+1. **Dual-Mode Preservation:** All frontend views and data calls in `AppContext.jsx` and `src/lib/api.js` must support both **Live Supabase Mode** and **In-Memory Demo Mode** (`isDemo === true`).
+2. **Criterion-Wise Grading Integrity:** Do not revert to coarse monolithic grading. Always grade against individual rubric criteria with explicit key-point justifications.
+3. **Teacher-in-the-Loop Authority:** Automated marks are suggestions. Teacher score overrides must always take precedence and be logged to `audit_events`.
+4. **Environment Variables:**
+   - Frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `.env.local`.
+   - Backend: `SUPABASE_URL`, `SUPABASE_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_TEXT_MODEL` in `backend/.env`.
