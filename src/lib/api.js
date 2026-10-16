@@ -2,6 +2,34 @@ import { supabase } from './supabaseClient';
 import { mockExams } from '../data/mockData';
 import { decodeEvaluation, summarizeSubmission } from './grading';
 
+const SHEETS_BUCKET = 'answer-sheets';
+const SIGNED_URL_TTL = 3600; // seconds a sheet's signed URL stays valid
+
+// A stored sheet reference is a storage path (new rows) or a full public URL (rows
+// saved before the bucket was made private). Return the storage path either way.
+function sheetStoragePath(stored) {
+  if (!stored) return null;
+  const marker = `/${SHEETS_BUCKET}/`;
+  const i = stored.indexOf(marker);
+  return (i >= 0 ? stored.slice(i + marker.length) : stored).split(/[?#]/)[0];
+}
+
+// path -> short-lived signed URL, for many sheets in one request
+async function signSheetPaths(storedValues) {
+  const paths = [...new Set(storedValues.map(sheetStoragePath).filter(Boolean))];
+  if (!paths.length) return {};
+  const { data, error } = await supabase.storage.from(SHEETS_BUCKET).createSignedUrls(paths, SIGNED_URL_TTL);
+  if (error) {
+    console.warn('Could not sign answer-sheet URLs:', error.message);
+    return {};
+  }
+  const byPath = {};
+  for (const row of data || []) {
+    if (row.signedUrl && !row.error) byPath[row.path] = row.signedUrl;
+  }
+  return byPath;
+}
+
 // Fetch exams for current teacher from Supabase DB
 export async function fetchTeacherExams(teacherId, isDemo = false) {
   if (isDemo) return mockExams;
@@ -73,8 +101,12 @@ export async function fetchTeacherSubmissions(exams) {
       return [];
     }
 
+    // The bucket is private, so turn each stored path into a fresh signed URL (one request)
+    const signedByPath = await signSheetPaths((sheets || []).map(s => s.file_url));
+
     return (sheets || []).map((sheet, idx) => {
       const exam = exams.find(e => e.id === sheet.exam_id);
+      const sheetUrl = signedByPath[sheetStoragePath(sheet.file_url)] || null;
       const examQuestions = exam?.questions || [];
 
       const answers = (sheet.student_answers || [])
@@ -127,8 +159,8 @@ export async function fetchTeacherSubmissions(exams) {
         submittedAt: sheet.created_at,
         ocrAccuracy,
         teacherApproved: sheet.upload_status === 'approved',
-        fileUrl: sheet.file_url,
-        imagePreview: sheet.file_url,
+        fileUrl: sheetUrl,
+        imagePreview: sheetUrl,
         answers,
       });
     });
@@ -247,19 +279,21 @@ export async function uploadAnswerSheetDB(examId, file, { studentName = null, ro
       .from('answer-sheets')
       .upload(filePath, file);
 
-    let fileUrl = '';
+    // The bucket is private: store the storage path, and sign it on demand for viewing.
+    // A fresh signed URL is returned here so the sheet shows right after processing.
+    let signedUrl = '';
     if (!uploadError) {
-      const { data: publicUrlData } = supabase.storage
+      const { data: signed } = await supabase.storage
         .from('answer-sheets')
-        .getPublicUrl(filePath);
-      fileUrl = publicUrlData?.publicUrl || '';
+        .createSignedUrl(filePath, SIGNED_URL_TTL);
+      signedUrl = signed?.signedUrl || '';
     }
 
     const sheetId = crypto.randomUUID();
     const sheetRow = {
       id: sheetId,
       exam_id: examId,
-      file_url: fileUrl,
+      file_url: uploadError ? '' : filePath,
       upload_status: 'uploaded'
     };
 
@@ -271,7 +305,7 @@ export async function uploadAnswerSheetDB(examId, file, { studentName = null, ro
       ({ error: sheetError } = await supabase.from('answer_sheets').insert(sheetRow));
     }
 
-    return { sheetId, fileUrl, error: sheetError };
+    return { sheetId, fileUrl: signedUrl, error: sheetError };
   } catch (err) {
     console.error('Error uploading answer sheet:', err);
     return { sheetId: null, fileUrl: null, error: err };
@@ -382,15 +416,24 @@ export async function deleteExamFromDB(examId) {
     const sheetIds = (sheetRows || []).map(s => s.id);
 
     if (sheetIds.length > 0) {
+      // evaluations reference student_answers.id (column student_answer_id), so they
+      // must go before their parent student_answers rows
+      const { data: saRows } = await supabase
+        .from('student_answers')
+        .select('id')
+        .in('answer_sheet_id', sheetIds);
+      const studentAnswerIds = (saRows || []).map(a => a.id);
+
+      if (studentAnswerIds.length > 0) {
+        await supabase
+          .from('evaluations')
+          .delete()
+          .in('student_answer_id', studentAnswerIds);
+      }
+
       // Delete student_answers
       await supabase
         .from('student_answers')
-        .delete()
-        .in('answer_sheet_id', sheetIds);
-
-      // Delete evaluations
-      await supabase
-        .from('evaluations')
         .delete()
         .in('answer_sheet_id', sheetIds);
 
