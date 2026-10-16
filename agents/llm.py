@@ -199,3 +199,30 @@ def call_llm(prompt: str, image_paths: Optional[List[str]] = None, task: str = "
                 logger.error(f"{slot} failed: {e}")
                 break
     return None, None
+
+
+def local_engine_status() -> Dict[str, object]:
+    """Ollama reachable?, model loaded?, GPU memory it holds, and GPU load (macOS only, else None)."""
+    import subprocess
+    base = OLLAMA_URL.rsplit("/api/", 1)[0]
+    status: Dict[str, object] = {
+        "providers": _providers(), "model": MODELS["ollama"]["vision"],
+        "ollama": False, "loaded": False, "gpu_gb": 0.0, "gpu_percent": None,
+    }
+    try:
+        with urllib.request.urlopen(f"{base}/api/ps", timeout=2) as resp:
+            running = json.loads(resp.read().decode()).get("models", [])
+        status["ollama"] = True
+        for m in running:
+            if m.get("name") == status["model"]:
+                status["loaded"] = True
+                status["gpu_gb"] = round(m.get("size_vram", 0) / 1e9, 1)
+    except Exception:
+        pass
+    try:
+        out = subprocess.run(["ioreg", "-r", "-d", "1", "-c", "IOAccelerator"], capture_output=True, text=True, timeout=2).stdout
+        m = re.search(r'"Device Utilization %"=(\d+)', out)
+        status["gpu_percent"] = int(m.group(1)) if m else None
+    except Exception:
+        pass
+    return status

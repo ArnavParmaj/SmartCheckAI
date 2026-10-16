@@ -3,7 +3,21 @@
  * Centralized API client for communicating with the SmartCheck AI FastAPI backend (port 8000).
  */
 
+import { supabase } from './supabaseClient';
+
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+// The backend accepts requests only from a signed-in user: send the Supabase access token
+async function authHeaders(extra = {}) {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
+// fetch() to the backend with the login token attached
+async function backendFetch(path, options = {}) {
+  return fetch(`${BACKEND_BASE_URL}${path}`, { ...options, headers: await authHeaders(options.headers) });
+}
 
 /**
  * Check if the FastAPI backend service is alive and healthy.
@@ -37,7 +51,7 @@ export async function processAnswerSheetOCR(file, answerSheetId = null, question
     formData.append('answer_sheet_id', answerSheetId);
   }
 
-  const res = await fetch(`${BACKEND_BASE_URL}/ocr/process`, {
+  const res = await backendFetch(`/ocr/process`, {
     method: 'POST',
     body: formData,
   });
@@ -55,7 +69,7 @@ export async function processAnswerSheetOCR(file, answerSheetId = null, question
  * @returns {Promise<{detail: string, stage: string, page?: number, pages?: number}>}
  */
 export async function getJobProgress(jobId) {
-  const res = await fetch(`${BACKEND_BASE_URL}/progress/${encodeURIComponent(jobId)}`);
+  const res = await backendFetch(`/progress/${encodeURIComponent(jobId)}`);
   if (!res.ok) throw new Error(`Progress check failed (${res.status})`);
   return await res.json();
 }
@@ -65,7 +79,7 @@ export async function getJobProgress(jobId) {
  * @returns {Promise<{ollama: boolean, loaded: boolean, model: string, providers: string[]}>}
  */
 export async function getEngineStatus() {
-  const res = await fetch(`${BACKEND_BASE_URL}/engine-status`);
+  const res = await backendFetch(`/engine-status`);
   if (!res.ok) throw new Error(`Engine status failed (${res.status})`);
   return await res.json();
 }
@@ -79,7 +93,7 @@ export async function extractQuestionsFromFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE_URL}/ocr/extract-questions`, {
+  const res = await backendFetch(`/ocr/extract-questions`, {
     method: 'POST',
     body: formData,
   });
@@ -101,7 +115,7 @@ export async function extractRubricFromFile(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${BACKEND_BASE_URL}/ocr/extract-rubric`, {
+  const res = await backendFetch(`/ocr/extract-rubric`, {
     method: 'POST',
     body: formData,
   });
@@ -120,7 +134,7 @@ export async function extractRubricFromFile(file) {
  * @returns {Promise<any>}
  */
 export async function extractConcepts(payload) {
-  const res = await fetch(`${BACKEND_BASE_URL}/concepts/extract`, {
+  const res = await backendFetch(`/concepts/extract`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -138,7 +152,7 @@ export async function extractConcepts(payload) {
  * @returns {Promise<any>}
  */
 export async function evaluateAnswers(payload) {
-  const res = await fetch(`${BACKEND_BASE_URL}/evaluation/evaluate`, {
+  const res = await backendFetch(`/evaluation/evaluate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -156,7 +170,7 @@ export async function evaluateAnswers(payload) {
  * @returns {Promise<any>}
  */
 export async function generateFeedback(payload) {
-  const res = await fetch(`${BACKEND_BASE_URL}/feedback/generate`, {
+  const res = await backendFetch(`/feedback/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -179,7 +193,7 @@ export async function buildKnowledge(questions, { file = null, text = '' } = {})
   if (file) formData.append('file', file);
   if (text) formData.append('answer_key_text', text);
 
-  const res = await fetch(`${BACKEND_BASE_URL}/knowledge/build`, { method: 'POST', body: formData });
+  const res = await backendFetch(`/knowledge/build`, { method: 'POST', body: formData });
   if (!res.ok) throw new Error(`Answer key processing failed (${res.status})`);
   return await res.json();
 }
@@ -189,7 +203,7 @@ export async function buildKnowledge(questions, { file = null, text = '' } = {})
  * @param {Object} question - { label, text, max_marks, criteria, model_answer }
  */
 export async function rebuildKnowledge(question) {
-  const res = await fetch(`${BACKEND_BASE_URL}/knowledge/rebuild`, {
+  const res = await backendFetch(`/knowledge/rebuild`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(question),

@@ -14,11 +14,14 @@ Expected layout of the test files dir:
   answer key/BDA_Set_<n>_Answer_Key.pdf
   answer_sheets/Set<n>_Student<k>_<roll>_<name>.pdf
 Reference marks: eval/bda_reference_marks.csv
+The backend requires a login: set SMARTCHECK_SERVICE_TOKEN to the BACKEND_SERVICE_TOKEN
+value in backend/.env.
 """
 
 import argparse
 import csv
 import json
+import os
 import sys
 import time
 import uuid
@@ -26,11 +29,12 @@ import urllib.request
 from pathlib import Path
 
 API = "http://127.0.0.1:8000"
+AUTH = {"X-Service-Token": os.environ["SMARTCHECK_SERVICE_TOKEN"]} if os.getenv("SMARTCHECK_SERVICE_TOKEN") else {}
 HERE = Path(__file__).resolve().parent
 
 
 def post_json(path, payload, timeout=900):
-    req = urllib.request.Request(API + path, json.dumps(payload).encode(), {"Content-Type": "application/json"})
+    req = urllib.request.Request(API + path, json.dumps(payload).encode(), {"Content-Type": "application/json", **AUTH})
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
@@ -44,7 +48,7 @@ def post_form(path, files=None, fields=None, timeout=900):
         body += (f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="{Path(path_).name}"\r\n'
                  f"Content-Type: application/octet-stream\r\n\r\n").encode() + data + b"\r\n"
     body += f"--{boundary}--\r\n".encode()
-    req = urllib.request.Request(API + path, body, {"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    req = urllib.request.Request(API + path, body, {"Content-Type": f"multipart/form-data; boundary={boundary}", **AUTH})
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 

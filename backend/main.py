@@ -5,8 +5,9 @@ semantic evaluation, and feedback generation.
 """
 
 import sys
+import time
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 # Ensure both backend directory and project root are in Python module search path
@@ -21,6 +22,10 @@ from routes.concept_routes import router as concept_router
 from routes.evaluation_routes import router as evaluation_router
 from routes.feedback_routes import router as feedback_router
 from routes.knowledge_routes import router as knowledge_router
+from routes.monitor_routes import router as monitor_router
+from auth import require_user
+from agents import progress
+from agents.llm import local_engine_status
 
 app = FastAPI(
     title="SmartCheck AI Backend",
@@ -42,12 +47,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include all route modules
-app.include_router(ocr_router)
-app.include_router(concept_router)
-app.include_router(evaluation_router)
-app.include_router(feedback_router)
-app.include_router(knowledge_router)
+# API routes need a signed-in app user (see backend/auth.py); /health and /monitor don't
+signed_in = [Depends(require_user)]
+app.include_router(ocr_router, dependencies=signed_in)
+app.include_router(concept_router, dependencies=signed_in)
+app.include_router(evaluation_router, dependencies=signed_in)
+app.include_router(feedback_router, dependencies=signed_in)
+app.include_router(knowledge_router, dependencies=signed_in)
+app.include_router(monitor_router)
+
+# Polling endpoints, left out of the activity log so they don't drown out real work
+QUIET_PATHS = ("/health", "/progress/", "/engine-status", "/monitor", "/docs", "/openapi.json")
+
+
+@app.middleware("http")
+async def log_activity(request: Request, call_next):
+    started = time.time()
+    response = await call_next(request)
+    path = request.url.path
+    if request.method != "OPTIONS" and not path.startswith(QUIET_PATHS):
+        user = getattr(request.state, "user", None) or {}
+        progress.log_request({
+            "time": started, "method": request.method, "path": path, "status": response.status_code,
+            "seconds": round(time.time() - started, 2), "user": user.get("email"),
+        })
+    return response
 
 
 @app.get("/health")
@@ -56,29 +80,13 @@ async def health():
     return {"status": "ok"}
 
 
-@app.get("/progress/{job_id}")
+@app.get("/progress/{job_id}", dependencies=signed_in)
 def job_progress(job_id: str):
     """What a running OCR or grading request is doing right now."""
-    from agents import progress
     return progress.get(job_id) or {"detail": "Waiting to start", "stage": "queued"}
 
 
-@app.get("/engine-status")
+@app.get("/engine-status", dependencies=signed_in)
 def engine_status():
-    """The local AI engine (Ollama): reachable, which model is loaded and how much GPU memory it holds."""
-    import json
-    import urllib.request
-    from agents.llm import MODELS, OLLAMA_URL, _providers
-    base = OLLAMA_URL.rsplit("/api/", 1)[0]
-    status = {"providers": _providers(), "model": MODELS["ollama"]["vision"], "ollama": False, "loaded": False, "gpu_gb": 0.0}
-    try:
-        with urllib.request.urlopen(f"{base}/api/ps", timeout=2) as resp:
-            running = json.loads(resp.read().decode()).get("models", [])
-        status["ollama"] = True
-        for m in running:
-            if m.get("name") == status["model"]:
-                status["loaded"] = True
-                status["gpu_gb"] = round(m.get("size_vram", 0) / 1e9, 1)
-    except Exception:
-        pass
-    return status
+    """The local AI engine (Ollama): reachable, which model is loaded, GPU memory and load."""
+    return local_engine_status()

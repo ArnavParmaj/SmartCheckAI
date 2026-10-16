@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 
-from fastapi import APIRouter, File, Form, UploadFile
+from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 # Ensure project root and backend directory are in sys.path for robust module imports
@@ -159,6 +159,7 @@ def extract_rubric_endpoint(
 
 @router.post("/process")
 def process_ocr(
+    request: Request,
     file: UploadFile = File(...),
     answer_sheet_id: Optional[str] = Form(None),
     question_labels: Optional[str] = Form(None, description="JSON list of the exam's question labels"),
@@ -194,7 +195,8 @@ def process_ocr(
         temp_files_to_clean.append(temp_input.name)
 
         # Step 2: Convert PDF pages to images or use uploaded image directly
-        progress.update(job_id, "Preparing pages", stage="ocr")
+        user = getattr(request.state, "user", None) or {}
+        progress.update(job_id, "Preparing pages", stage="ocr", file=filename, user=user.get("email"))
         page_image_paths = []
 
         if file_ext == ".pdf":
@@ -303,6 +305,9 @@ def process_ocr(
         # If no answers extracted, provide empty Q1 entry
         if not combined_answers:
             combined_answers = {"Q1": ""}
+
+        progress.update(job_id, f"Handwriting read: {sum(1 for v in combined_answers.values() if v)} answer(s); saving, then grading",
+                        stage="ocr_done", engine=engine_used)
 
         # Step 4: Calculate overall average OCR confidence
         overall_confidence = (
