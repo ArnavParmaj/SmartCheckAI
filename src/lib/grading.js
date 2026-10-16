@@ -18,8 +18,9 @@ export function decodeEvaluation(row) {
 
 // Grade every answer of a submission on the backend (local models + optional Gemini).
 // Returns a new answers array with AI results filled in.
-export async function gradeAnswers(answers, examQuestions) {
+export async function gradeAnswers(answers, examQuestions, jobId = null) {
   const payload = {
+    job_id: jobId,
     answers: answers.map(ans => {
       const q = examQuestions.find(eq => eq.id === ans.questionId);
       return {

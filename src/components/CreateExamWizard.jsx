@@ -14,6 +14,15 @@ const STEPS = [
 ];
 
 
+// How a printed document was read, for notifications (everything runs on this computer)
+function engineName(engine = '') {
+  const parts = [];
+  if (engine.includes('local-text')) parts.push('typed text');
+  if (engine.includes('rapidocr')) parts.push('PaddleOCR');
+  if (engine.includes('ollama')) parts.push('local Qwen');
+  return parts.join(' + ') || engine || 'local OCR';
+}
+
 export default function CreateExamWizard() {
   const { createExam, navigate, showNotification } = useApp();
   const [step, setStep] = useState(1);
@@ -60,7 +69,7 @@ export default function CreateExamWizard() {
     setIsProcessingQuestionPaper(true);
     setQuestionPaperFileName(file.name);
     try {
-      showNotification(`Analyzing question paper "${file.name}" with AI Vision...`, 'info');
+      showNotification(`Reading question paper "${file.name}"...`, 'info');
       const res = await extractQuestionsFromFile(file);
       const extractedList = res?.questions || [];
 
@@ -82,7 +91,7 @@ export default function CreateExamWizard() {
       }));
 
       setQuestions(newQuestions);
-      const engineLabel = res.engine && !res.engine.startsWith('local') ? res.engine : 'Local OCR';
+      const engineLabel = engineName(res.engine);
       showNotification(`Extracted ${newQuestions.length} questions using ${engineLabel}!`, 'success');
     } catch (err) {
       console.error('Question paper extraction failed:', err);
@@ -98,7 +107,7 @@ export default function CreateExamWizard() {
     setIsProcessingRubric(true);
     setRubricFileName(file.name);
     try {
-      showNotification(`Analyzing rubric document "${file.name}" with AI Vision...`, 'info');
+      showNotification(`Reading rubric "${file.name}"... (scanned rubrics take a minute or two)`, 'info');
       const res = await extractRubricFromFile(file);
       const rubrics = res?.rubrics || [];
 
@@ -129,7 +138,7 @@ export default function CreateExamWizard() {
         showNotification(`${unmatched.length} rubric row(s) didn't match a question label; add them by hand if needed.`, 'warning');
       }
 
-      const engineLabel = res.engine && !res.engine.startsWith('local') ? res.engine : 'Local OCR';
+      const engineLabel = engineName(res.engine);
       showNotification(`Rubric attached (${engineLabel}): ${rubrics.filter(r => kind(r) === 'criterion').length} criteria, ${rubrics.filter(r => kind(r) !== 'criterion').length} marking rules.`, 'success');
     } catch (err) {
       console.error('Rubric scan error:', err);

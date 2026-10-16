@@ -27,7 +27,7 @@ class QuestionSpec(BaseModel):
 
 
 @router.post("/build")
-async def build_from_answer_key(
+def build_from_answer_key(
     questions: str = Form(..., description="JSON list of {label, text, max_marks, criteria}"),
     file: UploadFile = File(None),
     answer_key_text: str = Form(""),
@@ -36,7 +36,7 @@ async def build_from_answer_key(
     specs = [QuestionSpec(**q) for q in json.loads(questions)]
     text = answer_key_text
     if file is not None:
-        text = read_typed_document(await file.read(), file.filename or "answer_key.txt")
+        text = read_typed_document(file.file.read(), file.filename or "answer_key.txt")
     if not text.strip():
         return {"status": "error", "message": "The answer key has no readable text. Upload a typed PDF, Word (.docx) or text file."}
 

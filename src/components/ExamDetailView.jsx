@@ -3,11 +3,13 @@ import { useApp } from '../context/AppContext';
 import { mockStudentSubmissions, getStatusColor, getConfidenceClass } from '../data/mockData';
 import { needsFacultyReview } from '../lib/grading';
 import { openStudentReports } from '../lib/exportResults';
+import AnswerSheetViewer from './AnswerSheetViewer';
 
 export default function ExamDetailView() {
   const { activeExam, navigate, deleteExam, getSubmissionsForExam, showNotification } = useApp();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [sheetFor, setSheetFor] = useState(null);
 
   if (!activeExam) {
     navigate('exams');
@@ -148,6 +150,14 @@ export default function ExamDetailView() {
                     <td className="py-4 px-5 text-right">
                       <div className="flex items-center gap-2 justify-end">
                         <button
+                          onClick={() => setSheetFor(sub)}
+                          className="btn-ghost text-xs py-1 px-2 flex items-center gap-1"
+                          title="View the original answer sheet"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">description</span>
+                          Sheet
+                        </button>
+                        <button
                           onClick={() => navigate('ocr-review', { exam: activeExam, submission: sub })}
                           className="btn-ghost text-xs py-1 px-2"
                         >
@@ -168,6 +178,27 @@ export default function ExamDetailView() {
           </div>
         )}
       </div>
+
+      {/* Original answer sheet */}
+      {sheetFor && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn" onClick={() => setSheetFor(null)}>
+          <div className="w-full max-w-4xl h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <AnswerSheetViewer
+              url={sheetFor.fileUrl}
+              title={`${sheetFor.studentName} (${sheetFor.rollNumber}) · ${sheetFor.totalScore}/${sheetFor.maxScore}`}
+              onClose={() => setSheetFor(null)}
+              className="flex-1 shadow-modal"
+            />
+            <button
+              onClick={() => navigate('review-approve', { exam: activeExam, submission: sheetFor })}
+              className="btn-primary self-end mt-3"
+            >
+              <span className="material-symbols-outlined text-[18px]">rate_review</span>
+              Review marks
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (

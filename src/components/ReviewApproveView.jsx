@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { getConfidenceClass, getConfidenceLabel } from '../data/mockData';
 import { needsFacultyReview } from '../lib/grading';
 import { openStudentReports } from '../lib/exportResults';
+import AnswerSheetViewer from './AnswerSheetViewer';
 
 const STATUS_STYLE = {
   met: { icon: 'check_circle', color: 'text-secondary', label: 'Met' },
@@ -24,6 +25,7 @@ function ReviewApproveViewContent() {
   const [showFeedback, setShowFeedback] = useState(null);
   const [approved, setApproved] = useState(activeSubmission.teacherApproved);
   const [approving, setApproving] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
 
   const totalTeacher = activeSubmission.answers.reduce((sum, ans) => {
     const ov = overrides[ans.questionId];
@@ -60,11 +62,16 @@ function ReviewApproveViewContent() {
           <h1 className="text-headline-md font-bold text-on-surface">Evaluation Report</h1>
           <p className="text-body-sm text-on-surface-variant">
             {activeSubmission.studentName} ({activeSubmission.rollNumber}) · {activeExam?.title}
-            {activeSubmission.fileUrl && (
-              <> · <a href={activeSubmission.fileUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">View original sheet</a></>
-            )}
           </p>
         </div>
+        <button
+          onClick={() => setShowSheet(v => !v)}
+          className={`text-sm flex items-center gap-1 ${showSheet ? 'btn-primary' : 'btn-outline'}`}
+          aria-pressed={showSheet}
+        >
+          <span className="material-symbols-outlined text-[18px]">description</span>
+          {showSheet ? 'Hide Answer Sheet' : 'View Answer Sheet'}
+        </button>
         <button
           onClick={() => openStudentReports(activeExam, [activeSubmission]) || showNotification('Allow pop-ups for this site to download the report.', 'warning')}
           className="btn-outline text-sm flex items-center gap-1"
@@ -125,7 +132,16 @@ function ReviewApproveViewContent() {
         </div>
       </div>
 
-      {/* Question-by-question */}
+      {/* Question-by-question, beside the original sheet when it is open */}
+      <div className={showSheet ? 'grid grid-cols-1 lg:grid-cols-2 gap-5 items-start' : ''}>
+      {showSheet && (
+        <AnswerSheetViewer
+          url={activeSubmission.fileUrl}
+          title={`${activeSubmission.studentName} · original answer sheet`}
+          onClose={() => setShowSheet(false)}
+          className="h-[70vh] lg:h-[calc(100vh-6rem)] lg:sticky lg:top-20"
+        />
+      )}
       <div className="flex flex-col gap-4">
         {activeSubmission.answers.map((ans, index) => {
           const ov = overrides[ans.questionId];
@@ -144,7 +160,7 @@ function ReviewApproveViewContent() {
                 </span>
               </div>
 
-              <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className={`p-5 grid grid-cols-1 gap-5 ${showSheet ? '' : 'lg:grid-cols-2'}`}>
                 {/* Student answer next to the faculty model answer */}
                 <div className="flex flex-col gap-3">
                   <div>
@@ -284,6 +300,7 @@ function ReviewApproveViewContent() {
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Feedback Modal */}

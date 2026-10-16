@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { getConfidenceClass } from '../data/mockData';
+import AnswerSheetViewer from './AnswerSheetViewer';
 
 function OCRReviewViewContent() {
   const { activeSubmission, activeExam, navigate, updateOcrText } = useApp();
@@ -67,48 +68,11 @@ function OCRReviewViewContent() {
       {currentAnswer && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
           {/* Left: Student scan */}
-          <div className="card overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-bright">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px] text-on-surface-variant">photo_camera</span>
-                <span className="text-label-md font-semibold text-on-surface">Uploaded Document / Answer Sheet</span>
-              </div>
-              <span className="text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
-                {currentAnswer.questionLabel || `Q${activeSubmission.answers.indexOf(currentAnswer) + 1}`}
-              </span>
-            </div>
-
-            <div className="flex-1 p-4 bg-surface-container-low flex items-center justify-center min-h-[350px] overflow-auto">
-              {activeSubmission.imagePreview ? (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                  <img
-                    src={activeSubmission.imagePreview}
-                    alt="Uploaded Answer Sheet"
-                    className="max-h-[550px] w-auto max-w-full object-contain rounded-lg shadow-sm border border-outline-variant"
-                  />
-                  <p className="text-[11px] text-on-surface-variant mt-2">
-                    {activeSubmission.answers.length} question(s) recognized via Local AI OCR
-                  </p>
-                </div>
-              ) : (
-                /* Simulated handwritten paper */
-                <div className="w-full max-w-sm bg-white rounded-lg shadow-modal border border-outline-variant p-6 relative">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="border-b border-blue-100 py-4">
-                      {i === 0 && (
-                        <p className="font-mono text-on-surface leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Georgia, serif', opacity: 0.85, fontSize: '13px' }}>
-                          {currentAnswer.ocrText}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                  <div className="absolute top-2 right-2 text-[11px] text-on-surface-variant font-mono bg-surface-container px-2 py-0.5 rounded">
-                    {activeSubmission.rollNumber}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <AnswerSheetViewer
+            url={activeSubmission.fileUrl || activeSubmission.imagePreview}
+            title={`Answer sheet · ${currentAnswer.questionLabel || 'Q' + (activeSubmission.answers.indexOf(currentAnswer) + 1)}`}
+            className="h-[600px]"
+          />
 
           {/* Right: OCR Text */}
           <div className="card overflow-hidden flex flex-col">

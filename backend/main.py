@@ -54,3 +54,31 @@ app.include_router(knowledge_router)
 async def health():
     """Health check endpoint to verify backend status."""
     return {"status": "ok"}
+
+
+@app.get("/progress/{job_id}")
+def job_progress(job_id: str):
+    """What a running OCR or grading request is doing right now."""
+    from agents import progress
+    return progress.get(job_id) or {"detail": "Waiting to start", "stage": "queued"}
+
+
+@app.get("/engine-status")
+def engine_status():
+    """The local AI engine (Ollama): reachable, which model is loaded and how much GPU memory it holds."""
+    import json
+    import urllib.request
+    from agents.llm import MODELS, OLLAMA_URL, _providers
+    base = OLLAMA_URL.rsplit("/api/", 1)[0]
+    status = {"providers": _providers(), "model": MODELS["ollama"]["vision"], "ollama": False, "loaded": False, "gpu_gb": 0.0}
+    try:
+        with urllib.request.urlopen(f"{base}/api/ps", timeout=2) as resp:
+            running = json.loads(resp.read().decode()).get("models", [])
+        status["ollama"] = True
+        for m in running:
+            if m.get("name") == status["model"]:
+                status["loaded"] = True
+                status["gpu_gb"] = round(m.get("size_vram", 0) / 1e9, 1)
+    except Exception:
+        pass
+    return status

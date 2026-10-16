@@ -26,9 +26,10 @@ export async function checkBackendHealth() {
  * @param {string} [answerSheetId] - Optional Supabase answer_sheet UUID.
  * @returns {Promise<{status: string, ocr_confidence?: number, answers?: Record<string, string>, message?: string}>}
  */
-export async function processAnswerSheetOCR(file, answerSheetId = null, questionLabels = null) {
+export async function processAnswerSheetOCR(file, answerSheetId = null, questionLabels = null, jobId = null) {
   const formData = new FormData();
   formData.append('file', file);
+  if (jobId) formData.append('job_id', jobId);
   if (questionLabels?.length) {
     formData.append('question_labels', JSON.stringify(questionLabels));
   }
@@ -46,6 +47,26 @@ export async function processAnswerSheetOCR(file, answerSheetId = null, question
     throw new Error(`OCR processing failed (${res.status}): ${errorText}`);
   }
 
+  return await res.json();
+}
+
+/**
+ * What a running OCR or grading request (sent with this job id) is doing right now.
+ * @returns {Promise<{detail: string, stage: string, page?: number, pages?: number}>}
+ */
+export async function getJobProgress(jobId) {
+  const res = await fetch(`${BACKEND_BASE_URL}/progress/${encodeURIComponent(jobId)}`);
+  if (!res.ok) throw new Error(`Progress check failed (${res.status})`);
+  return await res.json();
+}
+
+/**
+ * The local AI engine: whether Ollama is reachable and the model is loaded.
+ * @returns {Promise<{ollama: boolean, loaded: boolean, model: string, providers: string[]}>}
+ */
+export async function getEngineStatus() {
+  const res = await fetch(`${BACKEND_BASE_URL}/engine-status`);
+  if (!res.ok) throw new Error(`Engine status failed (${res.status})`);
   return await res.json();
 }
 

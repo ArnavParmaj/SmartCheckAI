@@ -23,7 +23,11 @@ def get_model():
             from sentence_transformers import SentenceTransformer
             # CPU: MPS (Apple GPU) hangs when first used from a worker thread, and
             # this small model is fast enough on CPU
-            _model = SentenceTransformer(MODEL_NAME, device="cpu")
+            try:
+                # Use the cached copy without contacting Hugging Face; download only the first time
+                _model = SentenceTransformer(MODEL_NAME, device="cpu", local_files_only=True)
+            except Exception:
+                _model = SentenceTransformer(MODEL_NAME, device="cpu")
         except Exception as e:
             logger.error(f"Could not load sentence-transformers model: {e}")
             _load_failed = True

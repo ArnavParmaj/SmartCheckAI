@@ -12,7 +12,7 @@ opinion and each criterion's mark is the average of both. Disagreement between s
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from agents.concept_agent.concept_extractor import concept_label
 from agents.concept_agent.knowledge_builder import build_knowledge
@@ -157,7 +157,7 @@ def _with_deduction(parsed: Dict[str, Any], result: Dict[str, Any]) -> Dict[str,
     return result
 
 
-def gemini_grade_batch(answers: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+def gemini_grade_batch(answers: List[Dict[str, Any]], on_progress: Optional[Callable[[str], None]] = None) -> Dict[str, Dict[str, Any]]:
     """
     Second opinion for a whole answer sheet in ONE Gemini call (saves free-tier quota).
     answers: [{question_id, question_text, model_answer, criteria, student_answer}]
@@ -194,17 +194,27 @@ Respond ONLY with valid JSON:
     try:
         graded = json.loads(raw).get("answers", {})
     except Exception as e:
-        logger.error(f"Failed to parse Gemini batch grade JSON: {e}")
-        return {}
+        # Often a cut-off reply from a small model; the answers are graded one by one below
+        logger.error(f"Failed to parse batch grade JSON: {e}")
+        graded = {}
     out = {}
     if not isinstance(graded, dict):
-        return {}
+        graded = {}
     for a in todo:
         g = graded.get(a["question_id"])
         # A malformed second opinion for one answer just leaves it to local grading
         crit = _parse_criteria_grades(g.get("criteria", []), a["criteria"]) if isinstance(g, dict) else None
         if crit:
             out[a["question_id"]] = _with_deduction(g, {"criteria": crit, "feedback": g.get("feedback", "")})
+    # Small local models often grade only the first answer or two of a batch; grade the rest
+    # one at a time rather than leaving them to keyword matching alone
+    for a in todo:
+        if a["question_id"] not in out:
+            if on_progress:
+                on_progress(f"Grading {a['question_id']} on its own (local Qwen)")
+            single = _gemini_grade(a["question_text"], a["model_answer"], a["criteria"], a["student_answer"], a.get("rules"))
+            if single:
+                out[a["question_id"]] = single
     return out
 
 

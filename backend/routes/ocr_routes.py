@@ -27,6 +27,15 @@ from agents.ocr_agent.preprocessing import preprocess_image
 from agents.ocr_agent.ocr import run_ocr
 from agents.ocr_agent.segmentation import segment_answers
 from agents.concept_agent.answer_key import read_typed_document
+from agents import progress
+from agents.ocr_agent.printed_documents import (
+    read_printed_document,
+    parse_questions,
+    parse_rubric_tables,
+    parse_criteria_text,
+    parse_rubric_rules,
+    normalize_label,
+)
 from agents.ocr_agent.gemini_ocr import (
     is_gemini_available,
     gemini_extract_questions,
@@ -35,15 +44,6 @@ from agents.ocr_agent.gemini_ocr import (
 )
 
 
-def _typed_text(file_bytes: bytes, filename: str) -> str:
-    """Text of a typed PDF/DOCX/TXT ('' for images and scanned PDFs)."""
-    if Path(filename or "").suffix.lower() not in (".pdf", ".docx", ".txt"):
-        return ""
-    try:
-        text = read_typed_document(file_bytes, filename)
-    except Exception:
-        return ""
-    return text if len(text.strip()) >= 50 else ""
 from config.supabase_client import supabase
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
@@ -83,124 +83,86 @@ def _extract_page_images(file_bytes: bytes, filename: str) -> Tuple[List[str], L
     return page_images, temp_files
 
 
+def _cleanup(paths: List[str]) -> None:
+    for f in paths:
+        try:
+            if os.path.exists(f):
+                os.remove(f)
+        except Exception:
+            pass
+
+
+# Plain (non-async) endpoints: FastAPI runs them in a worker thread, so slow OCR or model
+# calls don't freeze the rest of the backend
 @router.post("/extract-questions")
-async def extract_questions_endpoint(
+def extract_questions_endpoint(
     file: UploadFile = File(...),
 ) -> Dict[str, Any]:
     """
-    Extract structured questions, sub-questions, and marks from a Question Paper:
-    Uses Gemini Multimodal Vision when available, seamlessly falling back to local OCR.
+    Questions, sub-questions and marks from a printed question paper: its text layer, or
+    RapidOCR for scans, parsed by rules. Only if the rules find nothing is the text (or,
+    with no text at all, the page images) given to the local AI model.
     """
-    file_bytes = await file.read()
+    file_bytes = file.file.read()
     if not file_bytes:
         return {"status": "error", "message": "Uploaded file is empty"}
-
-    page_images, temp_files = _extract_page_images(file_bytes, file.filename or "question_paper.jpg")
-
+    filename = file.filename or "question_paper.jpg"
+    page_images, temp_files = _extract_page_images(file_bytes, filename)
     try:
+        text, engine = read_printed_document(file_bytes, filename, page_images)
+        questions = parse_questions(text)
+        if questions:
+            return {"status": "success", "engine": engine, "questions": questions}
         if is_gemini_available():
-            gemini_qs, engine = gemini_extract_questions(page_images, _typed_text(file_bytes, file.filename or ""))
-            if gemini_qs:
-                return {
-                    "status": "success",
-                    "engine": engine,
-                    "questions": gemini_qs,
-                }
-
-        # Fallback to local RapidOCR + Segmentation
-        all_segmented = {}
-        for p in page_images:
-            prep = preprocess_image(p)
-            temp_files.append(prep)
-            res = run_ocr(prep)
-            segs = segment_answers(res.get("text", ""), lines=res.get("lines"))
-            all_segmented.update(segs)
-
-        fallback_qs = [
-            {
-                "id": k,
-                "text": v,
-                "marks": 5,
-                "choice_group": k.split("(")[0] if "(" in k else k,
-                "condition": "OR" if "[OR]" in v else ("AND" if "[AND]" in v else None),
-            }
-            for k, v in all_segmented.items()
-        ]
-
-        return {
-            "status": "success",
-            "engine": "local-rapidocr",
-            "questions": fallback_qs,
-        }
+            ai_questions, ai_engine = gemini_extract_questions([] if text.strip() else page_images, text)
+            if ai_questions:
+                return {"status": "success", "engine": ai_engine, "questions": ai_questions}
+        return {"status": "success", "engine": engine, "questions": []}
     finally:
-        for f in temp_files:
-            try:
-                if os.path.exists(f):
-                    os.remove(f)
-            except Exception:
-                pass
+        _cleanup(temp_files)
 
 
 @router.post("/extract-rubric")
-async def extract_rubric_endpoint(
+def extract_rubric_endpoint(
     file: UploadFile = File(...),
 ) -> Dict[str, Any]:
     """
-    Extract grading criteria and mark breakdowns from a Marking Rubric:
-    Uses Gemini Multimodal Vision when available, falling back to local OCR.
+    Criteria, deductions and general guidelines from a printed marking rubric. Typed PDFs:
+    criterion tables + rules, no AI. DOCX/TXT: numbered criterion rows + rules. Scans:
+    RapidOCR text, structured by the local AI model (table columns don't survive OCR).
     """
-    file_bytes = await file.read()
+    file_bytes = file.file.read()
     if not file_bytes:
         return {"status": "error", "message": "Uploaded file is empty"}
-
-    page_images, temp_files = _extract_page_images(file_bytes, file.filename or "rubric.jpg")
-
+    filename = file.filename or "rubric.jpg"
+    page_images, temp_files = _extract_page_images(file_bytes, filename)
     try:
+        text, engine = read_printed_document(file_bytes, filename, page_images, keep_numbers=True)
+        typed = engine == "local-text"
+        criteria: List[Dict[str, Any]] = []
+        if typed and filename.lower().endswith(".pdf"):
+            criteria = parse_rubric_tables(file_bytes)
+        if typed and not criteria:
+            criteria = parse_criteria_text(text)
+        if criteria:
+            return {"status": "success", "engine": engine, "rubrics": criteria + parse_rubric_rules(text)}
         if is_gemini_available():
-            rubrics, engine = gemini_extract_rubric(page_images, _typed_text(file_bytes, file.filename or ""))
-            if rubrics:
-                return {
-                    "status": "success",
-                    "engine": engine,
-                    "rubrics": rubrics,
-                }
-
-        # Fallback to local RapidOCR
-        all_text = ""
-        for p in page_images:
-            prep = preprocess_image(p)
-            temp_files.append(prep)
-            res = run_ocr(prep)
-            all_text += "\n" + res.get("text", "")
-
-        fallback_rubrics = [
-            {
-                "question_id": "General",
-                "criterion": "General Evaluation",
-                "max_marks": 5,
-                "description": all_text.strip()[:300],
-            }
-        ]
-
-        return {
-            "status": "success",
-            "engine": "local-rapidocr",
-            "rubrics": fallback_rubrics,
-        }
+            ai_rows, ai_engine = gemini_extract_rubric([] if text.strip() else page_images, text)
+            if ai_rows:
+                for row in ai_rows:
+                    row["question_id"] = normalize_label(row.get("question_id", ""))
+                return {"status": "success", "engine": f"{engine}+{ai_engine}", "rubrics": ai_rows}
+        return {"status": "success", "engine": engine, "rubrics": parse_rubric_rules(text)}
     finally:
-        for f in temp_files:
-            try:
-                if os.path.exists(f):
-                    os.remove(f)
-            except Exception:
-                pass
+        _cleanup(temp_files)
 
 
 @router.post("/process")
-async def process_ocr(
+def process_ocr(
     file: UploadFile = File(...),
     answer_sheet_id: Optional[str] = Form(None),
     question_labels: Optional[str] = Form(None, description="JSON list of the exam's question labels"),
+    job_id: Optional[str] = Form(None, description="Id to report live progress under (GET /progress/{job_id})"),
 ) -> Dict[str, Any]:
     """
     Process an uploaded answer sheet (image or PDF):
@@ -218,7 +180,7 @@ async def process_ocr(
 
     try:
         # Step 1: Validate file upload and save to temporary file
-        file_bytes = await file.read()
+        file_bytes = file.file.read()
         if not file_bytes:
             return {"status": "error", "message": "Uploaded file is empty"}
 
@@ -232,6 +194,7 @@ async def process_ocr(
         temp_files_to_clean.append(temp_input.name)
 
         # Step 2: Convert PDF pages to images or use uploaded image directly
+        progress.update(job_id, "Preparing pages", stage="ocr")
         page_image_paths = []
 
         if file_ext == ".pdf":
@@ -280,7 +243,10 @@ async def process_ocr(
         if is_gemini_available():
             try:
                 labels = json.loads(question_labels) if question_labels else None
-                gemini_answers, vision_engine, student_header = gemini_extract_student_answers(page_image_paths, labels)
+                gemini_answers, vision_engine, student_header = gemini_extract_student_answers(
+                    page_image_paths, labels,
+                    on_page=lambda i, n: progress.update(job_id, f"Reading handwriting: page {i} of {n} (local Qwen vision)", stage="ocr", page=i, pages=n),
+                )
                 if gemini_answers:
                     for label, item in gemini_answers.items():
                         combined_answers[label] = item["text"]
@@ -292,7 +258,8 @@ async def process_ocr(
                 print(f"Gemini OCR failed, falling back to local OCR: {e}")
 
         if not combined_answers:
-            for page_path in page_image_paths:
+            for page_no, page_path in enumerate(page_image_paths, 1):
+                progress.update(job_id, f"Reading page {page_no} of {len(page_image_paths)} (RapidOCR fallback)", stage="ocr", page=page_no, pages=len(page_image_paths))
                 # A. Preprocess image (deskew, dynamic range, resize)
                 preprocessed_path = preprocess_image(page_path)
                 temp_files_to_clean.append(preprocessed_path)

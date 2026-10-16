@@ -5,15 +5,16 @@ import { gradeAnswers, summarizeSubmission, encodeEvaluation } from './grading';
 const normaliseLabel = (label) => String(label || '').replace(/\s+/g, '').toUpperCase();
 
 // Upload -> OCR -> save answers -> grade -> save grades, for one student's answer sheet.
-// onStage(text) reports progress. Returns the finished submission.
-export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () => {} }) {
+// onStage(text) reports progress; jobId lets the backend report finer progress (GET /progress).
+// Returns the finished submission.
+export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () => {}, jobId = null }) {
   const examQuestions = exam.questions || [];
   const warnings = [];
 
   onStage('Reading handwriting');
   let ocrRes = null;
   try {
-    ocrRes = await processAnswerSheetOCR(fileItem.file, null, examQuestions.map(q => q.label));
+    ocrRes = await processAnswerSheetOCR(fileItem.file, null, examQuestions.map(q => q.label), jobId);
   } catch (err) {
     warnings.push(`OCR failed: ${err.message}`);
   }
@@ -25,11 +26,13 @@ export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () 
   const rollNumber = (fileItem.nameEdited ? fileItem.rollNumber?.trim() : header.roll_number || fileItem.rollNumber?.trim()) || '';
 
   let sheetId = null;
+  let storedUrl = null;
   if (!isDemo) {
     onStage('Uploading');
     const uploadRes = await uploadAnswerSheetDB(exam.id, fileItem.file, { studentName, rollNumber });
     if (uploadRes.error) warnings.push('Not saved to the database');
     else sheetId = uploadRes.sheetId;
+    storedUrl = uploadRes.fileUrl || null;
   }
   const rawAnswers = ocrRes?.answers || {};
   const answerConfidences = ocrRes?.answer_confidences || {};
@@ -65,7 +68,7 @@ export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () 
 
   onStage('Grading');
   try {
-    answers = await gradeAnswers(answers, examQuestions);
+    answers = await gradeAnswers(answers, examQuestions, jobId);
     if (sheetId) {
       for (const ans of answers) {
         if (!ans.studentAnswerId || ans.aiScore === null) continue;
@@ -91,7 +94,8 @@ export async function processAnswerSheet(exam, fileItem, { isDemo, onStage = () 
       submittedAt: new Date().toISOString(),
       ocrAccuracy: overallOcr !== null ? Math.round(overallOcr * 100) : 0,
       teacherApproved: false,
-      fileUrl: fileItem.preview,
+      // The stored copy survives a reload and also covers PDFs, which have no local preview
+      fileUrl: storedUrl || fileItem.preview,
       imagePreview: fileItem.preview,
       answers,
     }),

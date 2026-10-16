@@ -8,10 +8,10 @@ import re
 from typing import Dict, List, Optional, Any, Tuple
 
 
-def assemble_lines_with_layout(lines: List[Dict[str, Any]]) -> str:
+def assemble_lines_with_layout(lines: List[Dict[str, Any]], strip_metadata: bool = True) -> str:
     """
     Cluster spatial OCR lines into natural reading rows while stripping table metadata columns
-    (e.g., marks [05], course outcomes CO1, Bloom levels L2).
+    (e.g., marks [05], course outcomes CO1, Bloom levels L2) unless strip_metadata is False.
     """
     if not lines:
         return ""
@@ -37,7 +37,7 @@ def assemble_lines_with_layout(lines: List[Dict[str, Any]]) -> str:
         y_max = max(p[1] for p in box)
 
         # Filter out table metadata cells on the far-right margin (>72% width)
-        if x_min > max_x * 0.72 and meta_re.match(t):
+        if strip_metadata and x_min > max_x * 0.72 and meta_re.match(t):
             continue
 
         height = max(1.0, y_max - y_min)

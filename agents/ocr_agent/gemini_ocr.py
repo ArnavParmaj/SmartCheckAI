@@ -9,7 +9,8 @@ to local RapidOCR in the routes when no provider is available.
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+import re
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from agents.llm import call_llm, llm_available
 
@@ -95,8 +96,49 @@ Do not include rows that are totals or score-band descriptors.
 Respond ONLY with valid JSON:
 {"rubrics": [{"type": "criterion", "question_id": "Q1(a)", "criterion": "Definition", "max_marks": 1, "description": "..."}]}
 """
-    raw, engine = _read_document(prompt, image_paths, document_text, timeout=120)
-    return _parse(raw, "rubrics", list), engine
+    sections = _split_by_question(document_text)
+    if len(sections) < 3:
+        raw, engine = _read_document(prompt, image_paths, document_text, timeout=120)
+        return _parse(raw, "rubrics", list), engine
+    # A typed rubric is read one question at a time: in one long request, small local
+    # models drop rows (sometimes whole questions)
+    rows: List[Dict[str, Any]] = []
+    engine = None
+    for section in sections:
+        raw, section_engine = _read_document(prompt, [], section)
+        engine = engine or section_engine
+        rows += _parse(raw, "rubrics", list) or []
+    return (rows or None), engine
+
+
+def _split_by_question(text: Optional[str]) -> List[str]:
+    """Typed document text split before each question heading ("Q1. a)", "Q2"): [preamble, Q1, Q2, ...]."""
+    if not text:
+        return []
+    starts = [m.start() for m in re.finditer(r"(?m)^\s*Q\.?\s*\d+\b", text)]
+    if not starts:
+        return [text]
+    parts = [text[:starts[0]]] + [text[a:b] for a, b in zip(starts, starts[1:] + [len(text)])]
+    return [part for part in parts if part.strip()]
+
+
+def _norm_label(label: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", label.lower()).removeprefix("ans").removeprefix("q")
+
+
+def _match_label(key: str, question_labels: Optional[List[str]]) -> str:
+    """Map a model's key ("Q2(a)", "2 a", "Q.2") onto the exam's own label when it clearly means one."""
+    if not question_labels or key in question_labels or key == CONTINUED_KEY:
+        return key
+    by_norm = {_norm_label(l): l for l in question_labels}
+    norm = _norm_label(key)
+    if norm in by_norm:
+        return by_norm[norm]
+    # Small models copy the "Q1(a)" example: "Q2(a)" on an exam labelled "Q2" means Q2
+    base = re.match(r"\d+", norm)
+    if base and base.group() in by_norm and not any(n.startswith(base.group()) and n != base.group() and n[len(base.group())].isalpha() for n in by_norm):
+        return by_norm[base.group()]
+    return key
 
 
 def _read_answer_page(image_path: str, question_labels: Optional[List[str]], first_page: bool = False) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, str], Optional[str]]:
@@ -105,9 +147,14 @@ def _read_answer_page(image_path: str, question_labels: Optional[List[str]], fir
         "mapping however the student wrote the number (e.g. '1 a', 'Q1. a)', 'Ans 1(a)', '1.a') to the matching label.\n"
         if question_labels else ""
     )
+    # The example lists every exam label: small models copy the example's shape, and stop
+    # after as many answers as it shows
+    keys = ([] if first_page else [CONTINUED_KEY]) + (question_labels or ["Q1", "Q2", "Q3"])
+    example = ", ".join(f'"{key}": {{"text": "...", "confidence": 0.9}}' for key in keys)
     prompt = labels_hint + f"""You are an advanced handwriting OCR engine for university exam answer sheets.
 This image is ONE page of a student's answer booklet. Transcribe the student's answers with high fidelity,
 organised under their question labels. Do not treat the booklet header (name, roll number, set, subject) as an answer.{HEADER_HINT if first_page else ""}
+Give "text": "" for a question whose answer is not on this page.
 If the page starts with text that continues an answer from the previous page (no question label before it),
 put that text under the key "{CONTINUED_KEY}".
 Do not hallucinate, correct or add anything. Keep formulas, code and lists as written; describe diagrams in [brackets].
@@ -115,7 +162,7 @@ For each answer give "confidence": 0.0-1.0, how sure you are the transcription i
 Lower it for messy, faint, crossed-out or ambiguous handwriting and for words you had to guess.
 
 Respond ONLY with valid JSON:
-{{"answers": {{"Q1(a)": {{"text": "...", "confidence": 0.93}}}}{', "student": {"name": "...", "roll_number": "..."}' if first_page else ''}}}
+{{"answers": {{{example}}}{', "student": {"name": "...", "roll_number": "..."}' if first_page else ''}}}
 """
     raw, engine = call_llm(prompt, [image_path], task="vision")
     answers = _parse(raw, "answers", dict) or {}
@@ -129,12 +176,21 @@ Respond ONLY with valid JSON:
             conf = max(0.0, min(1.0, float(conf))) if conf is not None else None
         else:
             text, conf = str(value).strip(), None
+        if re.fullmatch(r'(text:\s*)?("")?|\.\.\.', text):  # placeholder copied from the example
+            continue
         if text:
-            result[label] = {"text": text, "confidence": conf}
+            label = _match_label(label, question_labels)
+            if label in result:
+                prev = result[label]
+                prev["text"] = f"{prev['text']}\n{text}"
+                confs = [c for c in (prev["confidence"], conf) if c is not None]
+                prev["confidence"] = min(confs) if confs else None
+            else:
+                result[label] = {"text": text, "confidence": conf}
     return result, student, engine
 
 
-def gemini_extract_student_answers(image_paths: List[str], question_labels: Optional[List[str]] = None) -> Tuple[Optional[Dict[str, Dict[str, Any]]], Optional[str], Dict[str, str]]:
+def gemini_extract_student_answers(image_paths: List[str], question_labels: Optional[List[str]] = None, on_page: Optional[Callable[[int, int], None]] = None) -> Tuple[Optional[Dict[str, Dict[str, Any]]], Optional[str], Dict[str, str]]:
     """
     Handwritten answer sheet pages, read one page per request (keeps each request
     within free-tier per-minute token limits) and merged in page order.
@@ -145,6 +201,8 @@ def gemini_extract_student_answers(image_paths: List[str], question_labels: Opti
     engine = None
     student: Dict[str, str] = {}
     for i, path in enumerate(image_paths):
+        if on_page:
+            on_page(i + 1, len(image_paths))
         page, page_student, page_engine = _read_answer_page(path, question_labels, first_page=(i == 0))
         if page_engine is None:
             return (merged or None), engine, student
